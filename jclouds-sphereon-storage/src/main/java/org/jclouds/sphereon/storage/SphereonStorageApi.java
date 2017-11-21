@@ -16,9 +16,9 @@
 
 package org.jclouds.sphereon.storage;
 
-import com.sphereon.sdk.model.ContainerResponse;
-import com.sphereon.sdk.model.InfoResponse;
-import com.sphereon.sdk.model.StreamLocation;
+import com.sphereon.sdk.storage.model.ContainerResponse;
+import com.sphereon.sdk.storage.model.InfoResponse;
+import com.sphereon.sdk.storage.model.StreamLocation;
 import org.jclouds.Fallbacks;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.options.GetOptions;

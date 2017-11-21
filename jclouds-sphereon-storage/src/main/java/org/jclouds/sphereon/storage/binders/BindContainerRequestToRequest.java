@@ -16,7 +16,7 @@
 
 package org.jclouds.sphereon.storage.binders;
 
-import com.sphereon.sdk.model.ContainerRequest;
+import com.sphereon.sdk.storage.model.ContainerRequest;
 import org.jclouds.http.HttpRequest;
 import org.jclouds.json.Json;
 import org.jclouds.rest.Binder;

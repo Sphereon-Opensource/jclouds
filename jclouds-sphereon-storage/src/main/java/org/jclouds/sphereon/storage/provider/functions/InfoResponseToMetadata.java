@@ -17,9 +17,9 @@
 package org.jclouds.sphereon.storage.provider.functions;
 
 import autovalue.shaded.org.apache.commons.lang.StringUtils;
-import com.sphereon.sdk.model.InfoResponse;
-import com.sphereon.sdk.model.StreamData;
-import com.sphereon.sdk.model.StreamLocation;
+import com.sphereon.sdk.storage.model.InfoResponse;
+import com.sphereon.sdk.storage.model.StreamData;
+import com.sphereon.sdk.storage.model.StreamLocation;
 import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageType;

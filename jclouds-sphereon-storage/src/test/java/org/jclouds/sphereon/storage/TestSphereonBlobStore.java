@@ -17,7 +17,7 @@
 package org.jclouds.sphereon.storage;
 
 import com.google.common.net.MediaType;
-import com.sphereon.sdk.model.OAuth2Credentials;
+import com.sphereon.sdk.storage.model.OAuth2Credentials;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;

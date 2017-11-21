@@ -36,7 +36,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSource;
-import com.sphereon.sdk.model.OAuth2Credentials;
+import com.sphereon.sdk.storage.model.OAuth2Credentials;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.integration.internal.BaseBlobLiveTest;

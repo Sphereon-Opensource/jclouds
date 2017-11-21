@@ -17,8 +17,8 @@
 package org.jclouds.sphereon.storage.provider;
 
 import com.google.common.base.Supplier;
-import com.sphereon.sdk.model.ContainerResponse;
-import com.sphereon.sdk.model.StreamLocation;
+import com.sphereon.sdk.storage.model.ContainerResponse;
+import com.sphereon.sdk.storage.model.StreamLocation;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.domain.BlobAccess;
