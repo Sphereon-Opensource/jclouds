@@ -40,6 +40,7 @@ import org.jclouds.blobstore.util.BlobUtils;
 import org.jclouds.collect.Memoized;
 import org.jclouds.domain.Credentials;
 import org.jclouds.domain.Location;
+import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.io.Payload;
 import org.jclouds.io.PayloadSlicer;
 import org.jclouds.location.Provider;
@@ -50,11 +51,13 @@ import org.jclouds.sphereon.storage.provider.functions.InfoResponseToMetadata;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.io.ByteStreams.toByteArray;
 
 @Singleton
 public class SphereonStorageBlobStore extends BaseBlobStore {
@@ -120,6 +123,22 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
             throw new UnsupportedOperationException("blob access not supported by Sphereon Storage");
         }
         String path = checkNotNull(from.getMetadata().getName(), "name");
+
+        MutableContentMetadata contentMetadata = checkNotNull(from.getPayload().getContentMetadata());
+        long length = checkNotNull(contentMetadata.getContentLength());
+
+        if (length != 0 && (putOptions.isMultipart() || !from.getPayload().isRepeatable())) {
+            // JCLOUDS-912 prevents using single-part uploads with InputStream payloads.
+            // Work around this with multi-part upload which buffers parts in-memory.
+            try {
+                byte[] bytes = toByteArray(from.getPayload().openStream());
+                from.setPayload(bytes);
+                from.getPayload().setContentMetadata(contentMetadata);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("failed to read stream", e);
+            }
+        }
+
         StreamLocation streamLocation = sync.createStream(container, path, from);
         if (streamLocation != null) {
             String eTag = String.valueOf(streamLocation.hashCode());

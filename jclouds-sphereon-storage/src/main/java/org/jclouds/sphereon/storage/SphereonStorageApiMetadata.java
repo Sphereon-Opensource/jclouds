@@ -62,7 +62,7 @@ public class SphereonStorageApiMetadata extends BaseHttpApiMetadata<SphereonStor
                     .credentialName("Access Key")
                     .documentation(URI.create("https://store.sphereon.com/store"))
                     .version(API_VERSION)
-                    .defaultEndpoint(String.format("http://gw.api.cloud.sphereon.com/bucket-storage/%s/", API_VERSION))
+                    .defaultEndpoint(String.format("https://gw.api.cloud.sphereon.com/bucket-storage/%s/", API_VERSION))
                     .defaultProperties(SphereonStorageApiMetadata.defaultProperties())
                     .view(typeToken(BlobStoreContext.class))
                     .defaultModules(ImmutableSet.<Class<? extends Module>>builder()
