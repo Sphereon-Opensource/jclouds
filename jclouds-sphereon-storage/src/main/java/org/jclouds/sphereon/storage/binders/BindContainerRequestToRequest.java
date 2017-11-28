@@ -50,7 +50,7 @@ public class BindContainerRequestToRequest implements Binder {
         ContainerRequest containerRequest = new ContainerRequest();
         containerRequest.setName(container);
         containerRequest.setBackendId(backendId);
-        containerRequest.setCreationMode(ContainerRequest.CreationModeEnum.ALLOW_EXISTING);
+        containerRequest.setPropagationType(ContainerRequest.PropagationTypeEnum.ALLOW);
 
         String json = jsonBinder.toJson(containerRequest);
         request.setPayload(json);

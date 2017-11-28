@@ -16,6 +16,7 @@
 
 package org.jclouds.sphereon.storage.provider;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -44,10 +45,16 @@ public class RequestHeaderFilter implements HttpRequestFilter {
 
     @Override
     public HttpRequest filter(HttpRequest request) throws HttpException {
-        request = request.toBuilder()
-                .replaceHeader(HttpHeaders.AUTHORIZATION, credentials.get().credential)
-                .replaceHeader(HttpHeaders.ACCEPT, MediaType.ANY_TYPE.type())
-                .build();
+        String oauth2Credentials = credentials.get().credential;
+
+        HttpRequest.Builder builder = request.toBuilder().replaceHeader(HttpHeaders.ACCEPT, MediaType.ANY_TYPE.type());
+        if (!Strings.isNullOrEmpty(oauth2Credentials)) {
+            if (!oauth2Credentials.toLowerCase().startsWith("bearer")) {
+                oauth2Credentials = "Bearer " + oauth2Credentials;
+            }
+            builder.replaceHeader(HttpHeaders.AUTHORIZATION, oauth2Credentials);
+        }
+        request = builder.build();
         logger.debug("<< %s", request);
         return request;
     }

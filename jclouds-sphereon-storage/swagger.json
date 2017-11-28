@@ -270,7 +270,7 @@
         "consumes": ["application/json;charset=UTF-8"]
       }
     },
-    "/streams/path/{containerId}/{path*}": {
+    "/streams/path/{containerId}/{path}": {
       "post": {
         "summary": "Create a new stream within a container",
         "security": [{"oauth2schema": ["global"]}],
@@ -301,21 +301,21 @@
           },
           {
             "in": "path",
-            "name": "path*",
-            "description": "path*",
+            "name": "path",
+            "description": "path",
             "type": "string",
             "required": true
           },
           {
             "in": "query",
-            "name": "creationMode",
-            "description": "creationMode",
+            "name": "propagationType",
+            "description": "propagationType",
             "type": "string",
             "required": false,
             "enum": [
-              "NEW_ONLY",
-              "REQUIRE_EXISTING",
-              "ALLOW_EXISTING"
+              "NO",
+              "REQUIRE",
+              "ALLOW"
             ]
           },
           {
@@ -365,8 +365,8 @@
           },
           {
             "in": "path",
-            "name": "path*",
-            "description": "path*",
+            "name": "path",
+            "description": "path",
             "type": "string",
             "required": true
           }
@@ -401,8 +401,8 @@
           },
           {
             "in": "path",
-            "name": "path*",
-            "description": "path*",
+            "name": "path",
+            "description": "path",
             "type": "string",
             "required": true
           }
@@ -458,13 +458,26 @@
             "description": "Container does not exist"
           }
         },
-        "parameters": [{
-          "in": "path",
-          "name": "backendId",
-          "description": "backendId",
-          "type": "string",
-          "required": true
-        }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "backendId",
+            "description": "backendId",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "credentials",
+            "description": "credentials",
+            "type": "string",
+            "required": false,
+            "enum": [
+              "OMIT",
+              "INCLUDE"
+            ]
+          }
+        ],
         "tags": ["Storage"],
         "consumes": ["application/json"]
       },
@@ -534,7 +547,7 @@
         "consumes": ["application/json;charset=UTF-8"]
       }
     },
-    "/info/path/{containerId}/{path*}": {"get": {
+    "/info/path/{containerId}/{path}": {"get": {
       "summary": "List streams in path",
       "security": [{"oauth2schema": ["global"]}],
       "produces": ["application/json"],
@@ -564,8 +577,8 @@
         },
         {
           "in": "path",
-          "name": "path*",
-          "description": "path*",
+          "name": "path",
+          "description": "path",
           "type": "string",
           "required": true
         }
@@ -586,6 +599,10 @@
     "BackendRequest": {
       "type": "object",
       "properties": {
+        "credentials": {
+          "description": "The credentials details",
+          "$ref": "#/definitions/CredentialsRequest"
+        },
         "backendType": {
           "description": "The type of backend that is created. This field allows users to create a local backend or with supported 3rd parties.",
           "type": "string",
@@ -634,19 +651,43 @@
         "parentId": {
           "description": "The backend that is used for when properties are not set. This allows usernamePasswordCredentials to be set at one backend and used by multiple backends.",
           "type": "string"
-        },
-        "requestCredentials": {
-          "description": "The credentials details",
-          "$ref": "#/definitions/RequestCredentials"
         }
       }
     },
     "InfoResponse": {
       "type": "object",
-      "properties": {"streamData": {
+      "properties": {"streamInfo": {
         "type": "array",
-        "items": {"$ref": "#/definitions/StreamData"}
+        "items": {"$ref": "#/definitions/StreamInfo"}
       }}
+    },
+    "CredentialsRequest": {
+      "type": "object",
+      "properties": {
+        "credentialType": {
+          "description": "The credentials class type to be used.",
+          "type": "string",
+          "enum": [
+            "com.sphereon.libs.storage.client.api.model.credentials.NoCredentials",
+            "com.sphereon.libs.storage.client.api.model.credentials.OAuthCredentials",
+            "com.sphereon.libs.storage.client.api.model.credentials.OAuth2Credentials",
+            "com.sphereon.libs.storage.client.api.model.credentials.UsernamePasswordCredentials",
+            "com.sphereon.libs.storage.client.api.model.credentials.ClaimParameters"
+          ]
+        },
+        "oauth2Credentials": {
+          "description": "The oauth2Credentials for this backend.",
+          "$ref": "#/definitions/OAuth2Credentials"
+        },
+        "oauthCredentials": {
+          "description": "The usernamePasswordCredentials for this backend.",
+          "$ref": "#/definitions/OAuthCredentials"
+        },
+        "usernamePasswordCredentials": {
+          "description": "The usernamePasswordCredentials for this backend.",
+          "$ref": "#/definitions/UsernamePasswordCredentials"
+        }
+      }
     },
     "ContainerResponse": {
       "type": "object",
@@ -655,7 +696,7 @@
         "state": {
           "type": "string",
           "enum": [
-            "REQUEST",
+            "REQUESTED",
             "CREATED",
             "UPDATED",
             "DELETED"
@@ -670,7 +711,7 @@
           "type": "string",
           "enum": [
             "API_SUPPLIER",
-            "END_USER"
+            "API_IMPLEMENTER"
           ]
         },
         "secretkey": {"type": "string"},
@@ -688,7 +729,7 @@
         "state": {
           "type": "string",
           "enum": [
-            "REQUEST",
+            "REQUESTED",
             "CREATED",
             "UPDATED",
             "DELETED"
@@ -708,7 +749,7 @@
         "state": {
           "type": "string",
           "enum": [
-            "REQUEST",
+            "REQUESTED",
             "CREATED",
             "UPDATED",
             "DELETED"
@@ -738,34 +779,6 @@
         "message": {"type": "string"}
       }
     },
-    "RequestCredentials": {
-      "type": "object",
-      "properties": {
-        "credentialType": {
-          "description": "The credentials class type to be used.",
-          "type": "string",
-          "enum": [
-            "com.sphereon.libs.storage.client.api.model.credentials.NoCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.OAuthCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.OAuth2Credentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.UsernamePasswordCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.ClaimParameters"
-          ]
-        },
-        "oauth2Credentials": {
-          "description": "The oauth2Credentials for this backend.",
-          "$ref": "#/definitions/OAuth2Credentials"
-        },
-        "oauthCredentials": {
-          "description": "The usernamePasswordCredentials for this backend.",
-          "$ref": "#/definitions/OAuthCredentials"
-        },
-        "usernamePasswordCredentials": {
-          "description": "The usernamePasswordCredentials for this backend.",
-          "$ref": "#/definitions/UsernamePasswordCredentials"
-        }
-      }
-    },
     "OAuth2Credentials": {
       "type": "object",
       "properties": {
@@ -773,7 +786,7 @@
           "type": "string",
           "enum": [
             "API_SUPPLIER",
-            "END_USER"
+            "API_IMPLEMENTER"
           ]
         },
         "token": {"type": "string"}
@@ -784,13 +797,29 @@
       "type": "object",
       "properties": {
         "folderPath": {"type": "string"},
-        "originalFileName": {"type": "string"},
-        "fileName": {"type": "string"},
+        "filename": {"type": "string"},
+        "name": {"type": "string"},
         "id": {
           "readOnly": true,
           "type": "string"
         },
-        "containerId": {"type": "string"}
+        "containerId": {"type": "string"},
+        "originalFilename": {"type": "string"}
+      }
+    },
+    "UsernamePasswordCredentials": {
+      "type": "object",
+      "properties": {
+        "authenticationProvider": {
+          "type": "string",
+          "enum": [
+            "API_SUPPLIER",
+            "API_IMPLEMENTER"
+          ]
+        },
+        "password": {"type": "string"},
+        "domain": {"type": "string"},
+        "userName": {"type": "string"}
       }
     },
     "ErrorResponse": {
@@ -801,24 +830,13 @@
         "items": {"$ref": "#/definitions/Error"}
       }}
     },
-    "UsernamePasswordCredentials": {
-      "type": "object",
-      "properties": {
-        "authenticationProvider": {
-          "type": "string",
-          "enum": [
-            "API_SUPPLIER",
-            "END_USER"
-          ]
-        },
-        "password": {"type": "string"},
-        "domain": {"type": "string"},
-        "userName": {"type": "string"}
-      }
-    },
     "Backend": {
       "type": "object",
       "properties": {
+        "credentials": {
+          "description": "The credentials that are used to connect with the backend storage location.",
+          "$ref": "#/definitions/Credentials"
+        },
         "backendType": {
           "description": "The type of backend that is created. This field allows users to create a local backend or with supported 3rd parties.",
           "readOnly": true,
@@ -832,6 +850,10 @@
           ]
         },
         "name": {"type": "string"},
+        "backendLocation": {
+          "description": "The storage region where the container and files are stored. This option is available for Google and Amazon Storage. For Azure is only possible to set the region when creating the storage account.",
+          "$ref": "#/definitions/BackendLocation"
+        },
         "id": {"type": "string"},
         "region": {
           "description": "The storage region where the container and files are stored. This option is available for Google and Amazon Storage. For Azure is only possible to set the region when creating the storage account.",
@@ -882,7 +904,7 @@
         "id": {"type": "string"}
       }
     },
-    "StreamData": {
+    "StreamInfo": {
       "description": "Information record from a data stream",
       "type": "object",
       "properties": {
@@ -894,10 +916,63 @@
           "type": "integer"
         },
         "etag": {"type": "string"},
+        "location": {"$ref": "#/definitions/BackendLocation"},
         "timeCreated": {
           "format": "date-time",
           "type": "string"
         },
+        "contentType": {"type": "string"},
+        "timeModified": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "userMetadata": {
+          "additionalProperties": {"type": "string"},
+          "type": "object"
+        }
+      }
+    },
+    "ContainerRequest": {
+      "type": "object",
+      "properties": {
+        "propagationType": {
+          "description": "The way a container is creation. If the container should be new, is allowed already exist or use an existing remote container.",
+          "type": "string",
+          "enum": [
+            "NO",
+            "REQUIRE",
+            "ALLOW"
+          ]
+        },
+        "name": {"type": "string"},
+        "backendId": {
+          "description": "The backend in which the container will be stored or is stored.",
+          "type": "string"
+        }
+      }
+    },
+    "BackendLocation": {
+      "type": "object",
+      "properties": {
+        "parent": {"$ref": "#/definitions/BackendLocation"},
+        "metadata": {"type": "object"},
+        "iso3166Codes": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "PROVIDER",
+            "REGION",
+            "ZONE",
+            "SYSTEM",
+            "NETWORK",
+            "HOST"
+          ]
+        },
+        "description": {"type": "string"},
+        "id": {"type": "string"},
         "region": {
           "type": "string",
           "enum": [
@@ -928,34 +1003,28 @@
             "GOOGLE_STORAGE_US_EAST3",
             "GOOGLE_STORAGE_US_WEST1"
           ]
-        },
-        "contentType": {"type": "string"},
-        "timeModified": {
-          "format": "date-time",
-          "type": "string"
-        },
-        "userMetadata": {
-          "additionalProperties": {"type": "string"},
-          "type": "object"
         }
       }
     },
-    "ContainerRequest": {
+    "Credentials": {
       "type": "object",
       "properties": {
-        "creationMode": {
-          "description": "The way a container is creation. If the container should be new, is allowed already exist or use an existing remote container.",
+        "credentialType": {
           "type": "string",
           "enum": [
-            "NEW_ONLY",
-            "REQUIRE_EXISTING",
-            "ALLOW_EXISTING"
+            "com.sphereon.libs.storage.client.api.model.credentials.NoCredentials",
+            "com.sphereon.libs.storage.client.api.model.credentials.OAuthCredentials",
+            "com.sphereon.libs.storage.client.api.model.credentials.OAuth2Credentials",
+            "com.sphereon.libs.storage.client.api.model.credentials.UsernamePasswordCredentials",
+            "com.sphereon.libs.storage.client.api.model.credentials.ClaimParameters"
           ]
         },
-        "name": {"type": "string"},
-        "backendId": {
-          "description": "The backend in which the container will be stored or is stored.",
-          "type": "string"
+        "authenticationProvider": {
+          "type": "string",
+          "enum": [
+            "API_SUPPLIER",
+            "API_IMPLEMENTER"
+          ]
         }
       }
     }

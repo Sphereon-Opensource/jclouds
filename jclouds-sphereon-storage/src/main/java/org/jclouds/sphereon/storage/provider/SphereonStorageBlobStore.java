@@ -123,6 +123,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
             throw new UnsupportedOperationException("blob access not supported by Sphereon Storage");
         }
         String path = checkNotNull(from.getMetadata().getName(), "name");
+        path = sanatizePath(path);
 
         MutableContentMetadata contentMetadata = checkNotNull(from.getPayload().getContentMetadata());
         long length = checkNotNull(contentMetadata.getContentLength());
@@ -148,9 +149,16 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
         }
     }
 
+    private String sanatizePath(String path) {
+//        if (path != null && !path.startsWith("/")) {
+//            path = "/" + path;
+//        }
+        return path;
+    }
+
     @Override
     public Blob getBlob(String container, String key, GetOptions getOptions) {
-        Payload payload = sync.getStream(container, key, getOptions);
+        Payload payload = sync.getStream(container, sanatizePath(key), getOptions);
         if (payload == null) {
             return null;
         }
@@ -163,14 +171,14 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public void removeBlob(String container, String key) {
-        sync.deleteStream(container, key);
+        sync.deleteStream(container, sanatizePath(key));
     }
 
     @Override
     public BlobMetadata blobMetadata(String container, String key) {
-        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(sync.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1)));
+        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(sync.listStreams(container, ListContainerOptions.Builder.prefix(sanatizePath(key)).maxResults(1)));
         for (MutableBlobMetadata metadata : storageMetadata) {
-            if (metadata.getName().equalsIgnoreCase(key)) {
+            if (metadata.getName().equalsIgnoreCase(key) || sanatizePath(metadata.getName()).equalsIgnoreCase(sanatizePath(key))) {
                 return metadata;
             }
         }
@@ -179,7 +187,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public boolean blobExists(String container, String key) {
-        return blobMetadata(container, key) != null;
+        return blobMetadata(container, sanatizePath(key)) != null;
     }
 
     @Override

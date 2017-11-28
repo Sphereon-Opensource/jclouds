@@ -43,14 +43,14 @@ public class TestSphereonBlobStore {
     private static final String filename1 = "file1.txt";
     private static final String filename2 = "folder/file2.txt";
 
-    static {
+    /*static {
         // to support localhost.fiddler
         System.setProperty("http.proxyHost", "127.0.0.1");
         System.setProperty("https.proxyHost", "127.0.0.1");
         System.setProperty("http.proxyPort", "8888");
         System.setProperty("https.proxyPort", "8888");
     }
-
+*/
     private static BlobStore getBlobStore() {
         String provider = "sphereon-storage";
         ContextBuilder contextBuilder = ContextBuilder.newBuilder(provider);
@@ -64,7 +64,7 @@ public class TestSphereonBlobStore {
 
     private static ContextBuilder sphereonStorageProviderSettings(ContextBuilder contextBuilder) {
         OAuth2Credentials accessCredentials = new OAuth2Credentials();
-        accessCredentials.setToken("b6573248-ee72-304c-9dde-364ef4802530");
+        accessCredentials.setToken("0dbd17f1-c108-350e-807e-42d13e543b32");
 
         Properties properties = new Properties();
         properties.setProperty(SphereonStorageConstants.BACKEND_ID, "backend");
