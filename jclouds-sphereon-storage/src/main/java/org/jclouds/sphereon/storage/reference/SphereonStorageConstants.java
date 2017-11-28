@@ -22,6 +22,7 @@ public final class SphereonStorageConstants {
     public static final String IDENTITY = "sphereon-storage.identity";
     public static final String STORAGE_CLIENT = "storage-client";
     public static final String CREDENTIAL = "sphereon-storage.credential";
+    public static final String ENDPOINT = "sphereon-storage.endpoint";
 
     private SphereonStorageConstants() {
         throw new AssertionError("intentionally unimplemented");

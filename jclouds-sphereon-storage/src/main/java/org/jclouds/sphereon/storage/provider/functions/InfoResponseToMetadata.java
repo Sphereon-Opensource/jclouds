@@ -16,9 +16,8 @@
 
 package org.jclouds.sphereon.storage.provider.functions;
 
-import autovalue.shaded.org.apache.commons.lang.StringUtils;
 import com.sphereon.sdk.storage.model.InfoResponse;
-import com.sphereon.sdk.storage.model.StreamData;
+import com.sphereon.sdk.storage.model.StreamInfo;
 import com.sphereon.sdk.storage.model.StreamLocation;
 import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.PageSet;
@@ -42,7 +41,7 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
             return mutableStorageMetadata;
         }
 
-        for (StreamData info : from.getStreamData()) {
+        for (StreamInfo info : from.getStreamInfo()) {
             MutableBlobMetadata metadata = new MutableBlobMetadataImpl();
 
             metadata.setContainer(info.getStreamLocation().getContainerId());
@@ -50,7 +49,7 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
             metadata.setName(buildName(info.getStreamLocation()));
             metadata.setLocation(null); // sphereon regions not supported
 
-            metadata.setType(StringUtils.isNotEmpty(info.getStreamLocation().getFileName()) ? StorageType.BLOB : StorageType.FOLDER);
+            metadata.setType(!isEmpty(info.getStreamLocation().getFilename()) ? StorageType.BLOB : StorageType.FOLDER);
             metadata.getContentMetadata().setContentType(info.getContentType());
 
             metadata.setETag(info.getEtag());
@@ -71,11 +70,15 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
 
     private String buildName(StreamLocation streamLocation) {
         String folder = streamLocation.getFolderPath();
-        String filename = streamLocation.getFileName();
-        if (StringUtils.isEmpty(folder) || StringUtils.endsWith(folder, "/")) {
+        String filename = streamLocation.getFilename();
+        if (isEmpty(folder) || folder.endsWith("/")) {
             return String.format("%s%s", folder, filename);
         } else {
             return String.format("%s/%s", folder, filename);
         }
+    }
+
+    private boolean isEmpty(String str){
+        return str == null || str.length() == 0;
     }
 }

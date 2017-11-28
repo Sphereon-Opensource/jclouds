@@ -21,14 +21,14 @@ import com.sphereon.sdk.storage.model.ContainerResponse;
 import com.sphereon.sdk.storage.model.StreamLocation;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
-import org.jclouds.blobstore.domain.BlobAccess;
-import org.jclouds.blobstore.domain.BlobMetadata;
-import org.jclouds.blobstore.domain.ContainerAccess;
-import org.jclouds.blobstore.domain.MultipartPart;
-import org.jclouds.blobstore.domain.MultipartUpload;
-import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageMetadata;
+import org.jclouds.blobstore.domain.BlobAccess;
+import org.jclouds.blobstore.domain.MultipartUpload;
+import org.jclouds.blobstore.domain.ContainerAccess;
+import org.jclouds.blobstore.domain.BlobMetadata;
+import org.jclouds.blobstore.domain.MultipartPart;
+import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.internal.MutableStorageMetadataImpl;
 import org.jclouds.blobstore.domain.internal.PageSetImpl;
 import org.jclouds.blobstore.internal.BaseBlobStore;
@@ -40,6 +40,7 @@ import org.jclouds.blobstore.util.BlobUtils;
 import org.jclouds.collect.Memoized;
 import org.jclouds.domain.Credentials;
 import org.jclouds.domain.Location;
+import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.io.Payload;
 import org.jclouds.io.PayloadSlicer;
 import org.jclouds.location.Provider;
@@ -50,11 +51,13 @@ import org.jclouds.sphereon.storage.provider.functions.InfoResponseToMetadata;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.io.ByteStreams.toByteArray;
 
 @Singleton
 public class SphereonStorageBlobStore extends BaseBlobStore {
@@ -116,6 +119,21 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public String putBlob(String container, Blob from, PutOptions putOptions) {
+        MutableContentMetadata contentMetadata = checkNotNull(from.getPayload().getContentMetadata());
+        long length = checkNotNull(contentMetadata.getContentLength());
+
+        if (length != 0 && (putOptions.isMultipart() || !from.getPayload().isRepeatable())) {
+            // JCLOUDS-912 prevents using single-part uploads with InputStream payloads.
+            // Work around this with multi-part upload which buffers parts in-memory.
+            try {
+                byte[] bytes = toByteArray(from.getPayload().openStream());
+                from.setPayload(bytes);
+                from.getPayload().setContentMetadata(contentMetadata);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("failed to read stream", e);
+            }
+        }
+
         if (putOptions.getBlobAccess() != BlobAccess.PRIVATE) {
             throw new UnsupportedOperationException("blob access not supported by Sphereon Storage");
         }
@@ -126,6 +144,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
             return eTag;
         } else {
             return null;
+
         }
     }
 
@@ -200,7 +219,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
     }
 
     @Override
-    public MultipartUpload initiateMultipartUpload(String s, BlobMetadata blobMetadata, PutOptions putOptions) {
+    public MultipartUpload initiateMultipartUpload(String container, BlobMetadata blobMetadata, PutOptions putOptions) {
         throw new UnsupportedOperationException("unsupported in Sphereon Storage");
     }
 
@@ -225,7 +244,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
     }
 
     @Override
-    public List<MultipartUpload> listMultipartUploads(String s) {
+    public List<MultipartUpload> listMultipartUploads(String container) {
         throw new UnsupportedOperationException("unsupported in Sphereon Storage");
     }
 

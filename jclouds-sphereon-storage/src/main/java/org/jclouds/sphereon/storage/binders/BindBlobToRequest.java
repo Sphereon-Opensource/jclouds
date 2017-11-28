@@ -16,6 +16,7 @@
 
 package org.jclouds.sphereon.storage.binders;
 
+import com.google.common.base.Preconditions;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.http.HttpRequest;
 import org.jclouds.io.Payload;
@@ -25,6 +26,8 @@ import org.jclouds.rest.Binder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import java.io.IOException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -47,12 +50,14 @@ public class BindBlobToRequest implements Binder {
     public <R extends HttpRequest> R bindToRequest(R request, Object input) {
         checkArgument(checkNotNull(input, "input") instanceof Blob, "this binder is only valid for Blob");
         checkNotNull(request, "request");
-        Blob blob = (Blob) input;
+        Blob blob = Blob.class.cast(input);
 
         Payload payload = blob.getPayload();
         checkArgument(payload.getContentMetadata().getContentLength() != null && payload.getContentMetadata().getContentLength() >= 0, "size must be set");
 
-        Part dataPart = Part.create(MULTIPART_STREAM, payload, Part.PartOptions.Builder.filename(blob.getMetadata().getName()).contentType(blob.getMetadata().getContentMetadata().getContentType()));
+        String name = blob.getMetadata().getName();
+        String contentType = payload.getContentMetadata().getContentType();
+        Part dataPart = Part.create(MULTIPART_STREAM, payload, Part.PartOptions.Builder.filename(name).contentType(contentType));
 
         request.setPayload(new MultipartForm(BOUNDARY_HEADER, dataPart));
 

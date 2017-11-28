@@ -29,11 +29,17 @@ import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.blobstore.options.PutOptions;
 import org.jclouds.http.HttpResponseException;
 import org.jclouds.io.ByteStreams2;
+import org.jclouds.io.Payload;
+import org.jclouds.io.payloads.InputStreamPayload;
 import org.jclouds.sphereon.storage.reference.SphereonStorageConstants;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
+
+import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.Properties;
 
 public class TestSphereonBlobStore {
@@ -43,12 +49,17 @@ public class TestSphereonBlobStore {
     private static final String filename1 = "file1.txt";
     private static final String filename2 = "folder/file2.txt";
 
+    private static final String sphereonStorageEndpoint = "http://localhost.fiddler:19780/";
+    private static final boolean FIDDLER_ENABLED = true;
+
     static {
         // to support localhost.fiddler
-        System.setProperty("http.proxyHost", "127.0.0.1");
-        System.setProperty("https.proxyHost", "127.0.0.1");
-        System.setProperty("http.proxyPort", "8888");
-        System.setProperty("https.proxyPort", "8888");
+        if (FIDDLER_ENABLED) {
+            System.setProperty("http.proxyHost", "127.0.0.1");
+            System.setProperty("https.proxyHost", "127.0.0.1");
+            System.setProperty("http.proxyPort", "8888");
+            System.setProperty("https.proxyPort", "8888");
+        }
     }
 
     private static BlobStore getBlobStore() {
@@ -70,8 +81,7 @@ public class TestSphereonBlobStore {
         properties.setProperty(SphereonStorageConstants.BACKEND_ID, "backend");
         properties.setProperty(SphereonStorageConstants.IDENTITY, SphereonStorageConstants.STORAGE_CLIENT);
         properties.setProperty(SphereonStorageConstants.CREDENTIAL, accessCredentials.getToken());
-        //properties.setProperty(SphereonStorageConstants.TEMP_DIR, storagePathController.getStorageTemp(accessCredentials).getAbsolutePath());
-        //properties.setProperty(SphereonStorageConstants.STORAGE_API_BASE_PATH, storageApiBasePath);
+        properties.setProperty(SphereonStorageConstants.ENDPOINT, sphereonStorageEndpoint);
         return contextBuilder.overrides(properties);
     }
 
@@ -107,21 +117,29 @@ public class TestSphereonBlobStore {
 
     @Test(priority = 4)
     public void putAndGetBlob() throws IOException {
-        byte[] payload = "TEXT".getBytes();
-        BlobBuilder blobBuilder = blobStore.blobBuilder(filename1);
-        BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder.payload(payload);
-        payloadBlobBuilder.contentType(MediaType.PLAIN_TEXT_UTF_8);
-        Blob blob = payloadBlobBuilder.build();
+        File file = loadResource("file1.txt");
+        byte[] bytes = Files.readAllBytes(file.toPath());
 
-        String eTag = blobStore.putBlob(container, blob);
-        Assert.assertNotNull(eTag);
+        try (InputStream inputStream = new FileInputStream(file)) {
+            Payload payload = new InputStreamPayload(inputStream);
 
-        boolean exists = blobStore.blobExists(container, filename1);
-        Assert.assertTrue(exists);
+            BlobBuilder blobBuilder = blobStore.blobBuilder(filename1);
+            BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder.payload(payload);
+            payloadBlobBuilder.contentType(MediaType.PLAIN_TEXT_UTF_8);
+            payloadBlobBuilder.contentLength(file.length());
+            Blob blob = payloadBlobBuilder.build();
 
-        Blob retrieved = blobStore.getBlob(container, filename1);
+            String eTag = blobStore.putBlob(container, blob);
+            Assert.assertNotNull(eTag);
 
-        assertBlobs(blob, retrieved, payload);
+
+            boolean exists = blobStore.blobExists(container, filename1);
+            Assert.assertTrue(exists);
+
+            Blob retrieved = blobStore.getBlob(container, filename1);
+
+            assertBlobs(blob, retrieved, bytes);
+        }
     }
 
     @Test(priority = 5)
@@ -228,5 +246,16 @@ public class TestSphereonBlobStore {
         Assert.assertNotNull(retrieved.getMetadata().getContentMetadata().getContentType());
 
         Assert.assertEquals(ByteStreams2.toByteArrayAndClose(retrieved.getPayload().openStream()), payload);
+    }
+
+    private File loadResource(String filename) {
+        try {
+            URL url = getClass().getClassLoader().getResource(filename);
+            File file = new File(url.toURI());
+            return file;
+        } catch (URISyntaxException e) {
+            Assert.fail(e.getMessage());
+            return null;
+        }
     }
 }
