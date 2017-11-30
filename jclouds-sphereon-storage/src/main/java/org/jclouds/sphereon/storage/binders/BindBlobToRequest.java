@@ -29,6 +29,7 @@ import javax.inject.Singleton;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 
 @Singleton
 public class BindBlobToRequest implements Binder {
@@ -52,9 +53,9 @@ public class BindBlobToRequest implements Binder {
         Payload payload = blob.getPayload();
         checkArgument(payload.getContentMetadata().getContentLength() != null && payload.getContentMetadata().getContentLength() >= 0, "size must be set");
 
-        Part dataPart = Part.create(MULTIPART_STREAM, payload, Part.PartOptions.Builder.filename(blob.getMetadata().getName()).contentType(blob.getMetadata().getContentMetadata().getContentType()));
+        Part streamPart = Part.create(MULTIPART_STREAM, payload, new Part.PartOptions().contentType(APPLICATION_OCTET_STREAM));
 
-        request.setPayload(new MultipartForm(BOUNDARY_HEADER, dataPart));
+        request.setPayload(new MultipartForm(BOUNDARY_HEADER, streamPart));
 
         // HeaderPart
         request.toBuilder().replaceHeader(CONTENT_TYPE, "Multipart/related; boundary= " + BOUNDARY_HEADER).build();

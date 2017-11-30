@@ -23,6 +23,8 @@ import org.jclouds.providers.internal.BaseProviderMetadata;
 import java.net.URI;
 import java.util.Properties;
 
+import static org.jclouds.sphereon.storage.reference.SphereonStorageConstants.SPHEREON_STORAGE;
+
 @AutoService(ProviderMetadata.class)
 public class SphereonStorageProviderMetadata extends BaseProviderMetadata {
 
@@ -51,7 +53,7 @@ public class SphereonStorageProviderMetadata extends BaseProviderMetadata {
     public static final class Builder extends BaseProviderMetadata.Builder {
 
         private Builder() {
-            id("sphereon-storage")
+            id(SPHEREON_STORAGE)
                     .name("Sphereon Storage")
                     .apiMetadata(new SphereonStorageApiMetadata())
                     .homepage(URI.create("https://www.sphereon.com"))
