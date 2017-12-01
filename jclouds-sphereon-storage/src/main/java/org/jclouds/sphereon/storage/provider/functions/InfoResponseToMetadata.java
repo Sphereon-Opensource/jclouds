@@ -49,6 +49,7 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
             metadata.setName(buildName(info.getStreamLocation()));
             metadata.setLocation(null); // sphereon regions not supported
 
+
             metadata.setType(!isEmpty(info.getStreamLocation().getFilename()) ? StorageType.BLOB : StorageType.FOLDER);
             metadata.getContentMetadata().setContentType(info.getContentType());
 

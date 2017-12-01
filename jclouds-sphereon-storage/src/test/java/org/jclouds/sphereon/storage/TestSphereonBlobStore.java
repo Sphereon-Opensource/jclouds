@@ -97,6 +97,7 @@ public class TestSphereonBlobStore {
         return contextBuilder.overrides(properties);
     }
 
+
     @Test(priority = 0, groups = "0")
     public void assertBackendExists() {
         boolean exists = storageApi.backendExists(BACKEND_NAME_OR_ID);

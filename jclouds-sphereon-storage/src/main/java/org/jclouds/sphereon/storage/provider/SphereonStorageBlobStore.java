@@ -88,6 +88,16 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
         this.infoResponseToMetadata = checkNotNull(infoResponseToMetadata, "infoResponseToMetadata");
     }
 
+    public boolean createBackend(BackendRequest backendRequest) {
+        BackendResponse backendResponse = storageApi.createBackend(backendRequest);
+        return backendResponse != null && backendResponse.getState() == BackendResponse.StateEnum.CREATED;
+    }
+
+    public boolean backendExists(String backend) {
+        return storageApi.backendExists(backend);
+    }
+
+
     @Override
     public boolean createContainerInLocation(Location location, String container) {
         return createContainerInLocation(location, container, CreateContainerOptions.NONE);
@@ -172,7 +182,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
     public BlobMetadata blobMetadata(String container, String key) {
         PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(storageApi.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1)));
         for (MutableBlobMetadata metadata : storageMetadata) {
-            if (metadata.getName().equalsIgnoreCase(key)) {
+            if (metadata.getName().equalsIgnoreCase(key) || sanatizePath(metadata.getName()).equalsIgnoreCase(sanatizePath(key))) {
                 return metadata;
             }
         }
@@ -181,7 +191,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public boolean blobExists(String container, String key) {
-        return blobMetadata(container, key) != null;
+        return blobMetadata(container, sanatizePath(key)) != null;
     }
 
     @Override
