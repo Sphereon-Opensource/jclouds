@@ -18,13 +18,17 @@ package org.jclouds.sphereon.storage.reference;
 
 public final class SphereonStorageConstants {
 
-    public static final String BACKEND_ID = "jclouds.sphereon-storage.backend-id";
-    public static final String IDENTITY = "sphereon-storage.identity";
+    public static final String SPHEREON_STORAGE = "sphereon-storage";
+    public static final String BACKEND_ID = "jclouds." + SPHEREON_STORAGE;
+    public static final String IDENTITY = SPHEREON_STORAGE + ".identity";
     public static final String STORAGE_CLIENT = "storage-client";
-    public static final String CREDENTIAL = "sphereon-storage.credential";
-    public static final String ENDPOINT = "sphereon-storage.endpoint";
+    public static final String CREDENTIAL = SPHEREON_STORAGE + ".credential";
 
-    private SphereonStorageConstants() {
-        throw new AssertionError("intentionally unimplemented");
-    }
+
+    public static final String API_VERSION = "0.8";
+    public static final String DEFAULT_ENDPOIMT = String.format("http://gw-dev.api.cloud.sphereon.com/bucket-storage/%s", API_VERSION);
+    // String.format("https://gw.api.cloud.sphereon.com/bucket-storage/%s/", API_VERSION);
+
+
+    private SphereonStorageConstants() {}
 }

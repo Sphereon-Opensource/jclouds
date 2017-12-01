@@ -37,6 +37,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSource;
 import com.sphereon.sdk.storage.model.OAuth2Credentials;
+import org.jclouds.Constants;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.integration.internal.BaseBlobLiveTest;
@@ -77,7 +78,7 @@ public class SphereonStorageBlobLiveTest extends BaseBlobLiveTest {
         properties.setProperty(SphereonStorageConstants.BACKEND_ID, "backend");
         properties.setProperty(SphereonStorageConstants.IDENTITY, "sphereon-storage");
         properties.setProperty(SphereonStorageConstants.CREDENTIAL, accessCredentials.getToken());
-        properties.setProperty(SphereonStorageConstants.ENDPOINT, sphereonEndpoint);
+        properties.setProperty(Constants.PROPERTY_ENDPOINT, sphereonEndpoint);
         properties.setProperty("jclouds.identity", "API User");
         return properties;
     }

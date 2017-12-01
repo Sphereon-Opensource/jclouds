@@ -17,8 +17,10 @@
 package org.jclouds.sphereon.storage.provider;
 
 import com.google.common.base.Supplier;
+import com.sphereon.sdk.storage.model.BackendRequest;
+import com.sphereon.sdk.storage.model.BackendResponse;
 import com.sphereon.sdk.storage.model.ContainerResponse;
-import com.sphereon.sdk.storage.model.StreamLocation;
+import com.sphereon.sdk.storage.model.StreamResponse;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.domain.PageSet;
@@ -64,7 +66,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     private static final Logger logger = new SLF4JLogger.SLF4JLoggerFactory().getLogger(SphereonStorageBlobStore.class.getName());
 
-    private final SphereonStorageApi sync;
+    private final SphereonStorageApi storageApi;
     private final Supplier<Credentials> credentialsSupplier;
     private final InfoResponseToMetadata infoResponseToMetadata;
     private final Blob.Factory blobFactory;
@@ -77,12 +79,12 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
                                        @Provider Supplier<Credentials> credentialsSupplier,
                                        PayloadSlicer slicer,
                                        Blob.Factory blobFactory,
-                                       SphereonStorageApi sync,
+                                       SphereonStorageApi storageApi,
                                        InfoResponseToMetadata infoResponseToMetadata) {
         super(context, blobUtils, defaultLocation, locations, slicer);
         this.credentialsSupplier = credentialsSupplier;
         this.blobFactory = checkNotNull(blobFactory, "blobFactory");
-        this.sync = checkNotNull(sync, "sync");
+        this.storageApi = checkNotNull(storageApi, "storageApi");
         this.infoResponseToMetadata = checkNotNull(infoResponseToMetadata, "infoResponseToMetadata");
     }
 
@@ -96,19 +98,19 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
         if (options.isPublicRead()) {
             throw new UnsupportedOperationException("unsupported in Sphereon Storage");
         }
-        ContainerResponse containerResponse = sync.createContainer(container);
+        ContainerResponse containerResponse = storageApi.createContainer(container);
         return containerResponse != null && containerResponse.getState() == ContainerResponse.StateEnum.CREATED;
     }
 
     @Override
     public boolean containerExists(String container) {
-        ContainerResponse containerResponse = sync.getContainer(container);
+        ContainerResponse containerResponse = storageApi.getContainer(container);
         return containerResponse != null && containerResponse.getState() != ContainerResponse.StateEnum.DELETED;
     }
 
     @Override
     protected boolean deleteAndVerifyContainerGone(final String container) {
-        ContainerResponse containerResponse = sync.deleteContainer(container);
+        ContainerResponse containerResponse = storageApi.deleteContainer(container);
         return containerResponse != null && containerResponse.getState() == ContainerResponse.StateEnum.DELETED;
     }
 
@@ -138,19 +140,19 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
             throw new UnsupportedOperationException("blob access not supported by Sphereon Storage");
         }
         String path = checkNotNull(from.getMetadata().getName(), "name");
-        StreamLocation streamLocation = sync.createStream(container, path, from);
-        if (streamLocation != null) {
-            String eTag = String.valueOf(streamLocation.hashCode());
+
+        StreamResponse streamResponse = storageApi.createStream(container, path, from);
+        if (streamResponse != null) {
+            String eTag = String.valueOf(streamResponse.getStreamLocation().hashCode());
             return eTag;
         } else {
             return null;
-
         }
     }
 
     @Override
     public Blob getBlob(String container, String key, GetOptions getOptions) {
-        Payload payload = sync.getStream(container, key, getOptions);
+        Payload payload = storageApi.getStream(container, key, getOptions);
         if (payload == null) {
             return null;
         }
@@ -163,12 +165,12 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public void removeBlob(String container, String key) {
-        sync.deleteStream(container, key);
+        storageApi.deleteStream(container, key);
     }
 
     @Override
     public BlobMetadata blobMetadata(String container, String key) {
-        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(sync.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1)));
+        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(storageApi.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1)));
         for (MutableBlobMetadata metadata : storageMetadata) {
             if (metadata.getName().equalsIgnoreCase(key)) {
                 return metadata;
@@ -195,7 +197,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public PageSet<? extends StorageMetadata> list(String container, ListContainerOptions listContainerOptions) {
-        return infoResponseToMetadata.apply(sync.listStreams(container, listContainerOptions));
+        return infoResponseToMetadata.apply(storageApi.listStreams(container, listContainerOptions));
     }
 
     @Override

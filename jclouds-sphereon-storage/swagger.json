@@ -270,7 +270,7 @@
         "consumes": ["application/json;charset=UTF-8"]
       }
     },
-    "/streams/path/{containerId}/{/path}": {
+    "/streams/path/{containerId}/{path}": {
       "post": {
         "summary": "Create a new stream within a container",
         "security": [{"oauth2schema": ["global"]}],
@@ -301,9 +301,16 @@
           },
           {
             "in": "path",
-            "name": "/path",
-            "description": "/path",
+            "name": "path",
+            "description": "path",
             "type": "string",
+            "required": true
+          },
+          {
+            "in": "formData",
+            "name": "stream",
+            "description": "stream",
+            "type": "file",
             "required": true
           },
           {
@@ -317,13 +324,6 @@
               "REQUIRE",
               "ALLOW"
             ]
-          },
-          {
-            "in": "formData",
-            "name": "stream",
-            "description": "stream",
-            "type": "file",
-            "required": true
           }
         ],
         "tags": ["Storage"],
@@ -365,8 +365,8 @@
           },
           {
             "in": "path",
-            "name": "/path",
-            "description": "/path",
+            "name": "path",
+            "description": "path",
             "type": "string",
             "required": true
           }
@@ -401,8 +401,8 @@
           },
           {
             "in": "path",
-            "name": "/path",
-            "description": "/path",
+            "name": "path",
+            "description": "path",
             "type": "string",
             "required": true
           }
@@ -474,7 +474,7 @@
             "required": false,
             "enum": [
               "OMIT",
-              "INLCUDE"
+              "INCLUDE"
             ]
           }
         ],
@@ -547,7 +547,7 @@
         "consumes": ["application/json;charset=UTF-8"]
       }
     },
-    "/info/path/{containerId}/{/path}": {"get": {
+    "/info/path/{containerId}/{path}": {"get": {
       "summary": "List streams in path",
       "security": [{"oauth2schema": ["global"]}],
       "produces": ["application/json"],
@@ -577,8 +577,8 @@
         },
         {
           "in": "path",
-          "name": "/path",
-          "description": "/path",
+          "name": "path",
+          "description": "path",
           "type": "string",
           "required": true
         }

@@ -16,8 +16,14 @@
 
 package org.jclouds.sphereon.storage;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
+import com.google.inject.Module;
+import com.sphereon.sdk.storage.model.BackendRequest;
+import com.sphereon.sdk.storage.model.BackendResponse;
+import com.sphereon.sdk.storage.model.CredentialsRequest;
 import com.sphereon.sdk.storage.model.OAuth2Credentials;
+import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
@@ -31,91 +37,114 @@ import org.jclouds.http.HttpResponseException;
 import org.jclouds.io.ByteStreams2;
 import org.jclouds.io.Payload;
 import org.jclouds.io.payloads.InputStreamPayload;
+import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.jclouds.sphereon.storage.reference.SphereonStorageConstants;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.Properties;
 
+import static org.jclouds.sphereon.storage.reference.SphereonStorageConstants.DEFAULT_ENDPOIMT;
+import static org.jclouds.sphereon.storage.reference.SphereonStorageConstants.SPHEREON_STORAGE;
+
 public class TestSphereonBlobStore {
 
-    private static final BlobStore blobStore = getBlobStore();
+    // The backend name or ID. Please not that this backend has to exist in Sphereon for the tests to work. Creating backends is out of the scope of jclouds
+    public static final String BACKEND_NAME_OR_ID = "jclouds-test-backend";
     private static final String container = "container-name" + System.currentTimeMillis();
     private static final String filename1 = "file1.txt";
     private static final String filename2 = "folder/file2.txt";
 
-    private static final String sphereonStorageEndpoint = "http://localhost.fiddler:19780/";
-    private static final boolean FIDDLER_ENABLED = true;
+    private static final boolean FIDDLER_ENABLED = Boolean.parseBoolean(System.getProperty("sphereon-storage.test.fiddler.enabled", "true"));
+    private static final String API_OAUTH2_TOKEN = System.getProperty("sphereon-storage.test.api-token", "0dbd17f1-c108-350e-807e-42d13e543b32");
+    private static final String ENDPOINT = System.getProperty("sphereon-storage.test.endpoint", "http://localhost:19780" /*DEFAULT_ENDPOIMT*/);
 
-    static {
-        // to support localhost.fiddler
-        if (FIDDLER_ENABLED) {
-            System.setProperty("http.proxyHost", "127.0.0.1");
-            System.setProperty("https.proxyHost", "127.0.0.1");
-            System.setProperty("http.proxyPort", "8888");
-            System.setProperty("https.proxyPort", "8888");
-        }
+    private final BlobStore blobStore;
+    private final SphereonStorageApi storageApi;
+
+    public TestSphereonBlobStore() {
+        ContextBuilder contextBuilder = createContextBuilder();
+        BlobStoreContext blobStoreContext = contextBuilder.modules(ImmutableSet.<Module>of(new SLF4JLoggingModule())).buildView(BlobStoreContext.class);
+
+        this.blobStore = blobStoreContext.getBlobStore();
+        this.storageApi = contextBuilder.buildApi(SphereonStorageApi.class);
     }
 
-    private static BlobStore getBlobStore() {
-        String provider = "sphereon-storage";
-        ContextBuilder contextBuilder = ContextBuilder.newBuilder(provider);
-        contextBuilder = sphereonStorageProviderSettings(contextBuilder);
-
-        BlobStoreContext blobStoreContext = contextBuilder.buildView(BlobStoreContext.class);
-        BlobStore blobStore = blobStoreContext.getBlobStore();
-
-        return blobStore;
-    }
-
-    private static ContextBuilder sphereonStorageProviderSettings(ContextBuilder contextBuilder) {
+    private ContextBuilder createContextBuilder() {
+        ContextBuilder contextBuilder = ContextBuilder.newBuilder(SPHEREON_STORAGE);
         OAuth2Credentials accessCredentials = new OAuth2Credentials();
-        accessCredentials.setToken("b6573248-ee72-304c-9dde-364ef4802530");
+        accessCredentials.setToken(API_OAUTH2_TOKEN);
 
         Properties properties = new Properties();
-        properties.setProperty(SphereonStorageConstants.BACKEND_ID, "backend");
+        properties.setProperty(SphereonStorageConstants.BACKEND_ID, BACKEND_NAME_OR_ID);
         properties.setProperty(SphereonStorageConstants.IDENTITY, SphereonStorageConstants.STORAGE_CLIENT);
         properties.setProperty(SphereonStorageConstants.CREDENTIAL, accessCredentials.getToken());
-        properties.setProperty(SphereonStorageConstants.ENDPOINT, sphereonStorageEndpoint);
+        properties.setProperty(Constants.PROPERTY_ENDPOINT, ENDPOINT);
+        if (FIDDLER_ENABLED) {
+            properties.setProperty(Constants.PROPERTY_PROXY_HOST, "localhost");
+            properties.setProperty(Constants.PROPERTY_PROXY_PORT, "8888");
+
+        }
+        //properties.setProperty(SphereonStorageConstants.TEMP_DIR, storagePathController.getStorageTemp(accessCredentials).getAbsolutePath());
+        //properties.setProperty(SphereonStorageConstants.STORAGE_API_BASE_PATH, storageApiBasePath);
         return contextBuilder.overrides(properties);
     }
 
-    @Test(priority = 1)
+    @Test(priority = 0, groups = "0")
+    public void assertBackendExists() {
+        boolean exists = storageApi.backendExists(BACKEND_NAME_OR_ID);
+        if (!exists) {
+            BackendRequest backendRequest = new BackendRequest();
+            backendRequest.setName(BACKEND_NAME_OR_ID);
+            backendRequest.setBackendType(BackendRequest.BackendTypeEnum.SHARED_STORAGE);
+            backendRequest.setDescription("Test backend");
+            CredentialsRequest credentialsRequest = new CredentialsRequest();
+            credentialsRequest.setCredentialType(CredentialsRequest.CredentialTypeEnum.NOCREDENTIALS);
+            BackendResponse response = storageApi.createBackend(backendRequest);
+            exists = response.getState() == BackendResponse.StateEnum.CREATED;
+        }
+        Assert.assertTrue(exists);
+    }
+
+
+    @Test(priority = 1, groups = "1", dependsOnGroups = "0")
     public void assertContainerNotExists() {
         boolean exists = blobStore.containerExists(container);
         Assert.assertFalse(exists);
     }
 
-    @Test(priority = 2)
+    @Test(priority = 2, groups = "2", dependsOnGroups = "1")
     public void createContainer() {
         boolean created = blobStore.createContainerInLocation(null, container);
         Assert.assertTrue(created);
     }
 
-    @Test(priority = 3)
+    @Test(priority = 3, groups = "3", dependsOnGroups = "2")
     public void createContainerAgain() {
         boolean created = blobStore.createContainerInLocation(null, container);
         Assert.assertFalse(created);
     }
 
-    @Test(priority = 3)
+    @Test(priority = 3, groups = "3", dependsOnGroups = "2")
     public void assertContainerCreated() {
         boolean exists = blobStore.containerExists(container);
         Assert.assertTrue(exists);
     }
 
-    @Test(priority = 3)
+    @Test(priority = 3, groups = "3", dependsOnGroups = "2")
     public void containerEmptyList() {
         PageSet<? extends StorageMetadata> list = blobStore.list(container);
         Assert.assertTrue(list.isEmpty());
     }
 
-    @Test(priority = 4)
+    @Test(priority = 4, groups = "4", dependsOnGroups = "3")
     public void putAndGetBlob() throws IOException {
         File file = loadResource("file1.txt");
         byte[] bytes = Files.readAllBytes(file.toPath());
@@ -142,7 +171,7 @@ public class TestSphereonBlobStore {
         }
     }
 
-    @Test(priority = 5)
+    @Test(priority = 5, groups = "5", dependsOnGroups = "4")
     public void putAndGetBlobAgain() {
         byte[] payload = "TEXT".getBytes();
         BlobBuilder blobBuilder = blobStore.blobBuilder(filename1);
@@ -154,7 +183,7 @@ public class TestSphereonBlobStore {
         Assert.assertNull(eTag);
     }
 
-    @Test(priority = 5)
+    @Test(priority = 5, groups = "5", dependsOnGroups = "4")
     public void putAndGetBlobFolder() throws IOException {
         byte[] payload = "TEXT".getBytes();
         BlobBuilder blobBuilder = blobStore.blobBuilder(filename2);
@@ -175,7 +204,7 @@ public class TestSphereonBlobStore {
         assertBlobs(blob, retrieved, payload);
     }
 
-    @Test(priority = 6)
+    @Test(priority = 6, groups = "6", dependsOnGroups = "5")
     public void list() {
         ListContainerOptions options = ListContainerOptions.Builder.prefix(filename1);
         PageSet<? extends StorageMetadata> list = blobStore.list(container, options);
@@ -197,7 +226,7 @@ public class TestSphereonBlobStore {
         }
     }
 
-    @Test(priority = 7)
+    @Test(priority = 7, groups = "7", dependsOnGroups = "6")
     public void removeBlob() {
         PageSet<? extends StorageMetadata> list = blobStore.list(container);
         int sizeBefore = list.size();
@@ -211,18 +240,17 @@ public class TestSphereonBlobStore {
         Assert.assertEquals(list.size(), sizeBefore - 1);
     }
 
-    @Test(priority = 8, expectedExceptions = HttpResponseException.class)
+    @Test(priority = 8, groups = "8", dependsOnGroups = "7", expectedExceptions = HttpResponseException.class)
     public void deleteContainerTry() {
         boolean deleted = blobStore.deleteContainerIfEmpty(container);
         Assert.assertFalse(deleted);
     }
 
-    @Test(priority = 9)
+    @Test(priority = 9, groups = "9", dependsOnGroups = "8")
     public void deleteContainer() {
         blobStore.removeBlob(container, filename2);
 
         blobStore.deleteContainer(container);
-
 
         boolean exists = blobStore.blobExists(container, filename1);
         Assert.assertFalse(exists);
@@ -231,7 +259,7 @@ public class TestSphereonBlobStore {
         Assert.assertFalse(exists);
     }
 
-    @Test(priority = 10)
+    @Test(priority = 10, groups = "10", dependsOnGroups = "9")
     public void assertContainerDeleted() {
         boolean exists = blobStore.containerExists(container);
         Assert.assertFalse(exists);

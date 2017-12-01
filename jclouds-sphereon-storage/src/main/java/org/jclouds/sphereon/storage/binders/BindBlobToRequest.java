@@ -16,7 +16,6 @@
 
 package org.jclouds.sphereon.storage.binders;
 
-import com.google.common.base.Preconditions;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.http.HttpRequest;
 import org.jclouds.io.Payload;
@@ -32,6 +31,7 @@ import java.io.IOException;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 
 @Singleton
 public class BindBlobToRequest implements Binder {
@@ -57,9 +57,9 @@ public class BindBlobToRequest implements Binder {
 
         String name = blob.getMetadata().getName();
         String contentType = payload.getContentMetadata().getContentType();
-        Part dataPart = Part.create(MULTIPART_STREAM, payload, Part.PartOptions.Builder.filename(name).contentType(contentType));
+        Part streamPart = Part.create(MULTIPART_STREAM, payload, Part.PartOptions.Builder.filename(name).contentType(contentType));
 
-        request.setPayload(new MultipartForm(BOUNDARY_HEADER, dataPart));
+        request.setPayload(new MultipartForm(BOUNDARY_HEADER, streamPart));
 
         // HeaderPart
         request.toBuilder().replaceHeader(CONTENT_TYPE, "Multipart/related; boundary= " + BOUNDARY_HEADER).build();

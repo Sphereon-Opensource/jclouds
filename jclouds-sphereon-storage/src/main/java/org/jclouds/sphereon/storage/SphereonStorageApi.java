@@ -16,9 +16,11 @@
 
 package org.jclouds.sphereon.storage;
 
+import com.sphereon.sdk.storage.model.BackendRequest;
+import com.sphereon.sdk.storage.model.BackendResponse;
 import com.sphereon.sdk.storage.model.ContainerResponse;
 import com.sphereon.sdk.storage.model.InfoResponse;
-import com.sphereon.sdk.storage.model.StreamLocation;
+import com.sphereon.sdk.storage.model.StreamResponse;
 import org.jclouds.Fallbacks;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.options.GetOptions;
@@ -29,14 +31,16 @@ import org.jclouds.rest.annotations.Fallback;
 import org.jclouds.rest.annotations.RequestFilters;
 import org.jclouds.rest.annotations.ResponseParser;
 import org.jclouds.rest.annotations.SkipEncoding;
+import org.jclouds.rest.binders.BindToJsonPayload;
 import org.jclouds.sphereon.storage.binders.BindBlobToRequest;
 import org.jclouds.sphereon.storage.binders.BindContainerRequestToRequest;
 import org.jclouds.sphereon.storage.binders.BindGetOptionsToRequest;
 import org.jclouds.sphereon.storage.binders.BindListOptionsToRequest;
 import org.jclouds.sphereon.storage.fallbacks.NullOn404OR409;
+import org.jclouds.sphereon.storage.parsers.ParseBackendResponse;
 import org.jclouds.sphereon.storage.parsers.ParseContainerResponse;
 import org.jclouds.sphereon.storage.parsers.ParseInfoResponse;
-import org.jclouds.sphereon.storage.parsers.ParseStreamLocation;
+import org.jclouds.sphereon.storage.parsers.ParseStreamResponse;
 import org.jclouds.sphereon.storage.parsers.ParseStreamToBlob;
 import org.jclouds.sphereon.storage.provider.RequestHeaderFilter;
 
@@ -60,6 +64,31 @@ import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 @SkipEncoding({'/', '$'})
 @Path("/")
 public interface SphereonStorageApi extends Closeable {
+
+    /**
+     * The Create Container
+     */
+    @Named("CreateBackend")
+    @POST
+    @Path("backends")
+    @Produces(APPLICATION_JSON)
+    @ResponseParser(ParseBackendResponse.class)
+    @Fallback(NullOn404OR409.class)
+    BackendResponse createBackend(@BinderParam(BindToJsonPayload.class) BackendRequest backendRequest);
+
+    @Named("BackendExists")
+    @GET
+    @Path("backends/{backend}")
+    @Fallback(Fallbacks.FalseOnNotFoundOr404.class)
+    boolean backendExists(@PathParam("backend") String backend);
+
+    @Named("GetBackend")
+    @GET
+    @Path("backends/{backend}")
+    @Produces(APPLICATION_JSON)
+    @ResponseParser(ParseBackendResponse.class)
+    @Fallback(NullOn404OR409.class)
+    BackendResponse getBackend(@PathParam("backend") String backend);
 
     /**
      * The Create Container
@@ -99,9 +128,9 @@ public interface SphereonStorageApi extends Closeable {
     @Named("CreateStream")
     @POST
     @Path("streams/path/{container}/{path}")
-    @ResponseParser(ParseStreamLocation.class)
+    @ResponseParser(ParseStreamResponse.class)
     @Fallback(NullOn404OR409.class)
-    StreamLocation createStream(@PathParam("container") String container,
+    StreamResponse createStream(@PathParam("container") String container,
                                 @PathParam("path") String path,
                                 @BinderParam(BindBlobToRequest.class) Blob blob);
 
