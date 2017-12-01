@@ -16,7 +16,9 @@
 
 package org.jclouds.sphereon.storage;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
+import com.google.inject.Module;
 import com.sphereon.sdk.storage.model.BackendRequest;
 import com.sphereon.sdk.storage.model.BackendResponse;
 import com.sphereon.sdk.storage.model.CredentialsRequest;
@@ -33,6 +35,7 @@ import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.blobstore.options.PutOptions;
 import org.jclouds.http.HttpResponseException;
 import org.jclouds.io.ByteStreams2;
+import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.jclouds.sphereon.storage.reference.SphereonStorageConstants;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -48,30 +51,30 @@ public class TestSphereonBlobStore {
     private static final String filename1 = "file1.txt";
     private static final String filename2 = "folder/file2.txt";
 
-    private static final boolean FIDDLER_ENABLED = Boolean.getBoolean(System.getProperty("sphereon-storage.test.fiddler.enabled", "true"));
+    private static final boolean FIDDLER_ENABLED = Boolean.parseBoolean(System.getProperty("sphereon-storage.test.fiddler.enabled", "true"));
 
     private static final String API_OAUTH2_TOKEN = System.getProperty("sphereon-storage.test.api-token", "0dbd17f1-c108-350e-807e-42d13e543b32");
-    private static final String ENDPOINT = System.getProperty("sphereon-storage.test.endpoint", /*"http://localhost:19780" */DEFAULT_ENDPOIMT);
+    private static final String ENDPOINT = System.getProperty("sphereon-storage.test.endpoint", /*"http://localhost:19780"*/ DEFAULT_ENDPOIMT);
 
     // The backend name or ID. Please not that this backend has to exist in Sphereon for the tests to work. Creating backends is out of the scope of jclouds
     public static final String BACKEND_NAME_OR_ID = "jclouds-test-backend";
 
-    static {
-        if (FIDDLER_ENABLED) {
-            System.setProperty("http.proxyHost", "127.0.0.1");
-            System.setProperty("https.proxyHost", "127.0.0.1");
-            System.setProperty("http.proxyPort", "8888");
-            System.setProperty("https.proxyPort", "8888");
-        }
-    }
+    /* static {
+         if (FIDDLER_ENABLED) {
+             System.setProperty("http.proxyHost", "127.0.0.1");
+             System.setProperty("https.proxyHost", "127.0.0.1");
+             System.setProperty("http.proxyPort", "8888");
+             System.setProperty("https.proxyPort", "8888");
+         }
+     }
 
-
+ */
     private final BlobStore blobStore;
     private final SphereonStorageApi storageApi;
 
     public TestSphereonBlobStore() {
         ContextBuilder contextBuilder = createContextBuilder();
-        BlobStoreContext blobStoreContext = contextBuilder.buildView(BlobStoreContext.class);
+        BlobStoreContext blobStoreContext = contextBuilder.modules(ImmutableSet.<Module>of(new SLF4JLoggingModule())).buildView(BlobStoreContext.class);
 
         this.blobStore = blobStoreContext.getBlobStore();
         this.storageApi = contextBuilder.buildApi(SphereonStorageApi.class);
@@ -88,6 +91,11 @@ public class TestSphereonBlobStore {
         properties.setProperty(SphereonStorageConstants.IDENTITY, SphereonStorageConstants.STORAGE_CLIENT);
         properties.setProperty(SphereonStorageConstants.CREDENTIAL, accessCredentials.getToken());
         properties.setProperty(Constants.PROPERTY_ENDPOINT, ENDPOINT);
+        if (FIDDLER_ENABLED) {
+            properties.setProperty(Constants.PROPERTY_PROXY_HOST, "localhost");
+            properties.setProperty(Constants.PROPERTY_PROXY_PORT, "8888");
+
+        }
         //properties.setProperty(SphereonStorageConstants.TEMP_DIR, storagePathController.getStorageTemp(accessCredentials).getAbsolutePath());
         //properties.setProperty(SphereonStorageConstants.STORAGE_API_BASE_PATH, storageApiBasePath);
         return contextBuilder.overrides(properties);

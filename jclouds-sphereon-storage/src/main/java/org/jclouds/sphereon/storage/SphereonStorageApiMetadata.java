@@ -19,6 +19,7 @@ package org.jclouds.sphereon.storage;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Module;
 import org.jclouds.blobstore.BlobStoreContext;
+import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.jclouds.rest.internal.BaseHttpApiMetadata;
 import org.jclouds.sphereon.storage.provider.config.BlobStoreContextModule;
 import org.jclouds.sphereon.storage.reference.SphereonStorageConstants;

@@ -53,7 +53,7 @@ public class BindBlobToRequest implements Binder {
         Payload payload = blob.getPayload();
         checkArgument(payload.getContentMetadata().getContentLength() != null && payload.getContentMetadata().getContentLength() >= 0, "size must be set");
 
-        Part streamPart = Part.create(MULTIPART_STREAM, payload, new Part.PartOptions().contentType(APPLICATION_OCTET_STREAM));
+        Part streamPart = Part.create(MULTIPART_STREAM, payload, new Part.PartOptions().contentType(APPLICATION_OCTET_STREAM).filename(blob.getMetadata().getName()));
 
         request.setPayload(new MultipartForm(BOUNDARY_HEADER, streamPart));
 
