@@ -23,14 +23,14 @@ import com.sphereon.sdk.storage.model.ContainerResponse;
 import com.sphereon.sdk.storage.model.StreamResponse;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
-import org.jclouds.blobstore.domain.BlobAccess;
-import org.jclouds.blobstore.domain.BlobMetadata;
-import org.jclouds.blobstore.domain.ContainerAccess;
-import org.jclouds.blobstore.domain.MultipartPart;
-import org.jclouds.blobstore.domain.MultipartUpload;
-import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageMetadata;
+import org.jclouds.blobstore.domain.BlobAccess;
+import org.jclouds.blobstore.domain.MultipartUpload;
+import org.jclouds.blobstore.domain.ContainerAccess;
+import org.jclouds.blobstore.domain.BlobMetadata;
+import org.jclouds.blobstore.domain.MultipartPart;
+import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.internal.MutableStorageMetadataImpl;
 import org.jclouds.blobstore.domain.internal.PageSetImpl;
 import org.jclouds.blobstore.internal.BaseBlobStore;
@@ -131,12 +131,6 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public String putBlob(String container, Blob from, PutOptions putOptions) {
-        if (putOptions.getBlobAccess() != BlobAccess.PRIVATE) {
-            throw new UnsupportedOperationException("blob access not supported by Sphereon Storage");
-        }
-        String path = checkNotNull(from.getMetadata().getName(), "name");
-        path = sanatizePath(path);
-
         MutableContentMetadata contentMetadata = checkNotNull(from.getPayload().getContentMetadata());
         long length = checkNotNull(contentMetadata.getContentLength());
 
@@ -152,6 +146,11 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
             }
         }
 
+        if (putOptions.getBlobAccess() != BlobAccess.PRIVATE) {
+            throw new UnsupportedOperationException("blob access not supported by Sphereon Storage");
+        }
+        String path = checkNotNull(from.getMetadata().getName(), "name");
+
         StreamResponse streamResponse = storageApi.createStream(container, path, from);
         if (streamResponse != null) {
             String eTag = String.valueOf(streamResponse.getStreamLocation().hashCode());
@@ -161,16 +160,9 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
         }
     }
 
-    private String sanatizePath(String path) {
-//        if (path != null && !path.startsWith("/")) {
-//            path = "/" + path;
-//        }
-        return path;
-    }
-
     @Override
     public Blob getBlob(String container, String key, GetOptions getOptions) {
-        Payload payload = storageApi.getStream(container, sanatizePath(key), getOptions);
+        Payload payload = storageApi.getStream(container, key, getOptions);
         if (payload == null) {
             return null;
         }
@@ -183,12 +175,12 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public void removeBlob(String container, String key) {
-        storageApi.deleteStream(container, sanatizePath(key));
+        storageApi.deleteStream(container, key);
     }
 
     @Override
     public BlobMetadata blobMetadata(String container, String key) {
-        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(storageApi.listStreams(container, ListContainerOptions.Builder.prefix(sanatizePath(key)).maxResults(1)));
+        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(storageApi.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1)));
         for (MutableBlobMetadata metadata : storageMetadata) {
             if (metadata.getName().equalsIgnoreCase(key) || sanatizePath(metadata.getName()).equalsIgnoreCase(sanatizePath(key))) {
                 return metadata;
@@ -239,7 +231,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
     }
 
     @Override
-    public MultipartUpload initiateMultipartUpload(String s, BlobMetadata blobMetadata, PutOptions putOptions) {
+    public MultipartUpload initiateMultipartUpload(String container, BlobMetadata blobMetadata, PutOptions putOptions) {
         throw new UnsupportedOperationException("unsupported in Sphereon Storage");
     }
 
@@ -264,7 +256,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
     }
 
     @Override
-    public List<MultipartUpload> listMultipartUploads(String s) {
+    public List<MultipartUpload> listMultipartUploads(String container) {
         throw new UnsupportedOperationException("unsupported in Sphereon Storage");
     }
 

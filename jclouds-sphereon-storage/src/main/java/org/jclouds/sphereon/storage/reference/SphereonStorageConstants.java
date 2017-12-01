@@ -27,7 +27,8 @@ public final class SphereonStorageConstants {
 
     public static final String API_VERSION = "0.8";
     public static final String DEFAULT_ENDPOIMT = String.format("http://gw-dev.api.cloud.sphereon.com/bucket-storage/%s", API_VERSION);
-//String.format("https://gw.api.cloud.sphereon.com/bucket-storage/%s/", API_VERSION);
+
+    // String.format("https://gw.api.cloud.sphereon.com/bucket-storage/%s/", API_VERSION);
 
 
     private SphereonStorageConstants() {}

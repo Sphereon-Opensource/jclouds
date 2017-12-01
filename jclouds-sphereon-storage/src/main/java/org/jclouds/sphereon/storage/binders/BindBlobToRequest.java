@@ -26,6 +26,8 @@ import org.jclouds.rest.Binder;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import java.io.IOException;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
@@ -48,12 +50,14 @@ public class BindBlobToRequest implements Binder {
     public <R extends HttpRequest> R bindToRequest(R request, Object input) {
         checkArgument(checkNotNull(input, "input") instanceof Blob, "this binder is only valid for Blob");
         checkNotNull(request, "request");
-        Blob blob = (Blob) input;
+        Blob blob = Blob.class.cast(input);
 
         Payload payload = blob.getPayload();
         checkArgument(payload.getContentMetadata().getContentLength() != null && payload.getContentMetadata().getContentLength() >= 0, "size must be set");
 
-        Part streamPart = Part.create(MULTIPART_STREAM, payload, new Part.PartOptions().contentType(APPLICATION_OCTET_STREAM).filename(blob.getMetadata().getName()));
+        String name = blob.getMetadata().getName();
+        String contentType = payload.getContentMetadata().getContentType();
+        Part streamPart = Part.create(MULTIPART_STREAM, payload, Part.PartOptions.Builder.filename(name).contentType(contentType));
 
         request.setPayload(new MultipartForm(BOUNDARY_HEADER, streamPart));
 

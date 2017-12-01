@@ -16,7 +16,6 @@
 
 package org.jclouds.sphereon.storage.provider.functions;
 
-import autovalue.shaded.org.apache.commons.lang.StringUtils;
 import com.sphereon.sdk.storage.model.InfoResponse;
 import com.sphereon.sdk.storage.model.StreamInfo;
 import com.sphereon.sdk.storage.model.StreamLocation;
@@ -50,7 +49,8 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
             metadata.setName(buildName(info.getStreamLocation()));
             metadata.setLocation(null); // sphereon regions not supported
 
-            metadata.setType(StringUtils.isNotEmpty(info.getStreamLocation().getFilename()) ? StorageType.BLOB : StorageType.FOLDER);
+
+            metadata.setType(!isEmpty(info.getStreamLocation().getFilename()) ? StorageType.BLOB : StorageType.FOLDER);
             metadata.getContentMetadata().setContentType(info.getContentType());
 
             metadata.setETag(info.getEtag());
@@ -72,10 +72,14 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
     private String buildName(StreamLocation streamLocation) {
         String folder = streamLocation.getFolderPath();
         String filename = streamLocation.getFilename();
-        if (StringUtils.isEmpty(folder) || StringUtils.endsWith(folder, "/")) {
+        if (isEmpty(folder) || folder.endsWith("/")) {
             return String.format("%s%s", folder, filename);
         } else {
             return String.format("%s/%s", folder, filename);
         }
+    }
+
+    private boolean isEmpty(String str){
+        return str == null || str.length() == 0;
     }
 }

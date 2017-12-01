@@ -17,7 +17,6 @@
 package org.jclouds.sphereon.storage.parsers;
 
 import com.google.inject.TypeLiteral;
-import com.sphereon.sdk.storage.model.StreamLocation;
 import com.sphereon.sdk.storage.model.StreamResponse;
 import org.jclouds.http.functions.ParseJson;
 import org.jclouds.json.Json;
