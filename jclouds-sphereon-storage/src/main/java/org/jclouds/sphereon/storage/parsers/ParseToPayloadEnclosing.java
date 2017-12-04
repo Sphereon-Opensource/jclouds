@@ -17,27 +17,16 @@
 package org.jclouds.sphereon.storage.parsers;
 
 import com.google.common.base.Function;
-import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.http.HttpResponse;
-import org.jclouds.io.Payload;
+import org.jclouds.http.internal.PayloadEnclosingImpl;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+public class ParseToPayloadEnclosing implements Function<HttpResponse, PayloadEnclosingImpl> {
 
-import static com.google.common.base.Preconditions.checkNotNull;
+    @Override
+    public PayloadEnclosingImpl apply(HttpResponse response) {
+        PayloadEnclosingImpl impl = new PayloadEnclosingImpl();
+        impl.setPayload(response.getPayload());
 
-@Singleton
-public class ParseStreamToBlob implements Function<HttpResponse, Payload> {
-
-    private final Blob.Factory blobFactory;
-
-    @Inject
-    public ParseStreamToBlob(Blob.Factory blobFactory) {
-        this.blobFactory = checkNotNull(blobFactory, "blobFactory");
-    }
-
-    public Payload apply(HttpResponse from) {
-        checkNotNull(from, "request");
-        return from.getPayload();
+        return impl;
     }
 }

@@ -25,7 +25,8 @@ import org.jclouds.Fallbacks;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.options.GetOptions;
 import org.jclouds.blobstore.options.ListContainerOptions;
-import org.jclouds.io.Payload;
+import org.jclouds.io.PayloadEnclosing;
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.rest.annotations.BinderParam;
 import org.jclouds.rest.annotations.Fallback;
 import org.jclouds.rest.annotations.RequestFilters;
@@ -41,11 +42,10 @@ import org.jclouds.sphereon.storage.parsers.ParseBackendResponse;
 import org.jclouds.sphereon.storage.parsers.ParseContainerResponse;
 import org.jclouds.sphereon.storage.parsers.ParseInfoResponse;
 import org.jclouds.sphereon.storage.parsers.ParseStreamResponse;
-import org.jclouds.sphereon.storage.parsers.ParseStreamToBlob;
+import org.jclouds.sphereon.storage.parsers.ParseToPayloadEnclosing;
 import org.jclouds.sphereon.storage.provider.RequestHeaderFilter;
 
 import javax.inject.Named;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -55,7 +55,6 @@ import javax.ws.rs.Produces;
 import java.io.Closeable;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 
 /**
  * Provides access to Sphereon Storage Blob via REST API.
@@ -140,12 +139,12 @@ public interface SphereonStorageApi extends Closeable {
     @Named("GetStream")
     @GET
     @Path("streams/path/{container}/{path}")
-    @Consumes({APPLICATION_OCTET_STREAM, APPLICATION_JSON})
-    @ResponseParser(ParseStreamToBlob.class)
+    @ResponseParser(ParseToPayloadEnclosing.class)
     @Fallback(Fallbacks.NullOnNotFoundOr404.class)
-    Payload getStream(@PathParam("container") String container,
-                      @PathParam("path") String path,
-                      @BinderParam(BindGetOptionsToRequest.class) GetOptions options);
+    @Nullable
+    PayloadEnclosing getStream(@PathParam("container") String container,
+                               @PathParam("path") String path,
+                               @BinderParam(BindGetOptionsToRequest.class) GetOptions options);
 
     /**
      * The Delete Stream

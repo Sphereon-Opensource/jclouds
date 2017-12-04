@@ -54,6 +54,7 @@ import java.util.Properties;
 import static org.jclouds.sphereon.storage.reference.SphereonStorageConstants.DEFAULT_ENDPOIMT;
 import static org.jclouds.sphereon.storage.reference.SphereonStorageConstants.SPHEREON_STORAGE;
 
+@Test(singleThreaded = true)
 public class TestSphereonBlobStore {
 
     // The backend name or ID. Please not that this backend has to exist in Sphereon for the tests to work. Creating backends is out of the scope of jclouds
@@ -64,7 +65,7 @@ public class TestSphereonBlobStore {
 
     private static final boolean FIDDLER_ENABLED = Boolean.parseBoolean(System.getProperty("sphereon-storage.test.fiddler.enabled", "true"));
     private static final String API_OAUTH2_TOKEN = System.getProperty("sphereon-storage.test.api-token", "0dbd17f1-c108-350e-807e-42d13e543b32");
-    private static final String ENDPOINT = System.getProperty("sphereon-storage.test.endpoint", "http://localhost:19780" /*DEFAULT_ENDPOIMT*/);
+    private static final String ENDPOINT = System.getProperty("sphereon-storage.test.endpoint", /*"http://localhost:19780"*/ DEFAULT_ENDPOIMT);
 
     private final BlobStore blobStore;
     private final SphereonStorageApi storageApi;
@@ -98,7 +99,7 @@ public class TestSphereonBlobStore {
     }
 
 
-    @Test(priority = 0, groups = "0")
+    @Test(priority = 0)
     public void assertBackendExists() {
         boolean exists = storageApi.backendExists(BACKEND_NAME_OR_ID);
         if (!exists) {
@@ -115,37 +116,37 @@ public class TestSphereonBlobStore {
     }
 
 
-    @Test(priority = 1, groups = "1", dependsOnGroups = "0")
+    @Test(priority = 1)
     public void assertContainerNotExists() {
         boolean exists = blobStore.containerExists(container);
         Assert.assertFalse(exists);
     }
 
-    @Test(priority = 2, groups = "2", dependsOnGroups = "1")
+    @Test(priority = 2)
     public void createContainer() {
         boolean created = blobStore.createContainerInLocation(null, container);
         Assert.assertTrue(created);
     }
 
-    @Test(priority = 3, groups = "3", dependsOnGroups = "2")
+    @Test(priority = 3)
     public void createContainerAgain() {
         boolean created = blobStore.createContainerInLocation(null, container);
         Assert.assertFalse(created);
     }
 
-    @Test(priority = 3, groups = "3", dependsOnGroups = "2")
+    @Test(priority = 3)
     public void assertContainerCreated() {
         boolean exists = blobStore.containerExists(container);
         Assert.assertTrue(exists);
     }
 
-    @Test(priority = 3, groups = "3", dependsOnGroups = "2")
+    @Test(priority = 3)
     public void containerEmptyList() {
         PageSet<? extends StorageMetadata> list = blobStore.list(container);
         Assert.assertTrue(list.isEmpty());
     }
 
-    @Test(priority = 4, groups = "4", dependsOnGroups = "3")
+    @Test(priority = 4)
     public void putAndGetBlob() throws IOException {
         File file = loadResource("file1.txt");
         byte[] bytes = Files.readAllBytes(file.toPath());
@@ -169,10 +170,13 @@ public class TestSphereonBlobStore {
             Blob retrieved = blobStore.getBlob(container, filename1);
 
             assertBlobs(blob, retrieved, bytes);
+//            Assert.assertEquals(blob.getMetadata().getContentMetadata().getContentType(), "text/plain");
+//            Assert.assertEquals(blob.getMetadata().getType(), StorageType.BLOB);
+
         }
     }
 
-    @Test(priority = 5, groups = "5", dependsOnGroups = "4")
+    @Test(priority = 5)
     public void putAndGetBlobAgain() {
         byte[] payload = "TEXT".getBytes();
         BlobBuilder blobBuilder = blobStore.blobBuilder(filename1);
@@ -184,7 +188,7 @@ public class TestSphereonBlobStore {
         Assert.assertNull(eTag);
     }
 
-    @Test(priority = 5, groups = "5", dependsOnGroups = "4")
+    @Test(priority = 5)
     public void putAndGetBlobFolder() throws IOException {
         byte[] payload = "TEXT".getBytes();
         BlobBuilder blobBuilder = blobStore.blobBuilder(filename2);
@@ -205,7 +209,7 @@ public class TestSphereonBlobStore {
         assertBlobs(blob, retrieved, payload);
     }
 
-    @Test(priority = 6, groups = "6", dependsOnGroups = "5")
+    @Test(priority = 6)
     public void list() {
         ListContainerOptions options = ListContainerOptions.Builder.prefix(filename1);
         PageSet<? extends StorageMetadata> list = blobStore.list(container, options);
@@ -219,6 +223,7 @@ public class TestSphereonBlobStore {
 
         Assert.assertEquals(list.size(), 2);
         for (StorageMetadata metadata : list) {
+            System.out.println(String.format("%s: %s (%d)", metadata.getType(), metadata.getName(), metadata.getSize()));
             if (filename1.equalsIgnoreCase(metadata.getName())) {
                 Assert.assertEquals(metadata.getName(), filename1);
             } else {
@@ -227,7 +232,7 @@ public class TestSphereonBlobStore {
         }
     }
 
-    @Test(priority = 7, groups = "7", dependsOnGroups = "6")
+    @Test(priority = 7)
     public void removeBlob() {
         PageSet<? extends StorageMetadata> list = blobStore.list(container);
         int sizeBefore = list.size();
@@ -241,13 +246,13 @@ public class TestSphereonBlobStore {
         Assert.assertEquals(list.size(), sizeBefore - 1);
     }
 
-    @Test(priority = 8, groups = "8", dependsOnGroups = "7", expectedExceptions = HttpResponseException.class)
+    @Test(priority = 8, expectedExceptions = HttpResponseException.class)
     public void deleteContainerTry() {
         boolean deleted = blobStore.deleteContainerIfEmpty(container);
         Assert.assertFalse(deleted);
     }
 
-    @Test(priority = 9, groups = "9", dependsOnGroups = "8")
+    @Test(priority = 9)
     public void deleteContainer() {
         blobStore.removeBlob(container, filename2);
 
@@ -260,7 +265,7 @@ public class TestSphereonBlobStore {
         Assert.assertFalse(exists);
     }
 
-    @Test(priority = 10, groups = "10", dependsOnGroups = "9")
+    @Test(priority = 10)
     public void assertContainerDeleted() {
         boolean exists = blobStore.containerExists(container);
         Assert.assertFalse(exists);

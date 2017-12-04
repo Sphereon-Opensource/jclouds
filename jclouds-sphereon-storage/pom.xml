@@ -357,6 +357,9 @@
 
                         <!-- swagger -->
                         <exclude>**/.swagger-codegen-ignore</exclude>
+                        <exclude>log/**</exclude>
+                        <exclude>**/logback.xml</exclude>
+
                     </excludes>
                 </configuration>
             </plugin>

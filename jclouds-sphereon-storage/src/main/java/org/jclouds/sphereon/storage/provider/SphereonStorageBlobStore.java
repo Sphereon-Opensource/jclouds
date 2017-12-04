@@ -44,6 +44,7 @@ import org.jclouds.domain.Credentials;
 import org.jclouds.domain.Location;
 import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.io.Payload;
+import org.jclouds.io.PayloadEnclosing;
 import org.jclouds.io.PayloadSlicer;
 import org.jclouds.location.Provider;
 import org.jclouds.logging.Logger;
@@ -162,14 +163,14 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public Blob getBlob(String container, String key, GetOptions getOptions) {
-        Payload payload = storageApi.getStream(container, key, getOptions);
-        if (payload == null) {
+        PayloadEnclosing payloadEnclosing = storageApi.getStream(container, key, getOptions);
+        if (payloadEnclosing == null || payloadEnclosing.getPayload() == null) {
             return null;
         }
 
         BlobMetadata blobMetadata = blobMetadata(container, key);
         Blob blob = blobFactory.create((MutableBlobMetadata) blobMetadata);
-        blob.setPayload(payload);
+        blob.setPayload(payloadEnclosing.getPayload());
         return blob;
     }
 
@@ -182,7 +183,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
     public BlobMetadata blobMetadata(String container, String key) {
         PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(storageApi.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1)));
         for (MutableBlobMetadata metadata : storageMetadata) {
-            if (metadata.getName().equalsIgnoreCase(key) || sanatizePath(metadata.getName()).equalsIgnoreCase(sanatizePath(key))) {
+            if (metadata.getName().equalsIgnoreCase(key) || metadata.getName().equalsIgnoreCase(key)) {
                 return metadata;
             }
         }
@@ -191,7 +192,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public boolean blobExists(String container, String key) {
-        return blobMetadata(container, sanatizePath(key)) != null;
+        return blobMetadata(container, key) != null;
     }
 
     @Override
