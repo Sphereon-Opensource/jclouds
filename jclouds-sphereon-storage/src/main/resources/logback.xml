@@ -42,9 +42,14 @@
         <level value="info" />
     </root>
 
+    <logger name="com.sphereon">
+        <level value="DEBUG" />
+        <appender-ref ref="STDOUT" />
+    </logger>
+
     <logger name="org.jclouds">
         <level value="DEBUG" />
-        <appender-ref ref="FILE" />
+        <appender-ref ref="STDOUT" />
     </logger>
 
     <logger name="jclouds.compute">
@@ -54,12 +59,12 @@
 
     <logger name="jclouds.wire">
         <level value="DEBUG" />
-        <appender-ref ref="WIREFILE" />
+        <appender-ref ref="STDOUT" />
     </logger>
 
     <logger name="jclouds.headers">
         <level value="DEBUG" />
-        <appender-ref ref="WIREFILE" />
+        <appender-ref ref="STDOUT" />
     </logger>
 
     <logger name="jclouds.ssh">

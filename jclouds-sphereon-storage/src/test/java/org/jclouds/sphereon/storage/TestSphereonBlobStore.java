@@ -16,6 +16,7 @@
 
 package org.jclouds.sphereon.storage;
 
+import com.google.common.base.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
 import com.google.inject.Module;
@@ -46,8 +47,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.*;
 import java.nio.file.Files;
 import java.util.Properties;
 
@@ -63,7 +63,7 @@ public class TestSphereonBlobStore {
     private static final String filename1 = "file1.txt";
     private static final String filename2 = "folder/file2.txt";
 
-    private static final boolean FIDDLER_ENABLED = Boolean.parseBoolean(System.getProperty("sphereon-storage.test.fiddler.enabled", "true"));
+    private static final boolean FIDDLER_ENABLED = Boolean.parseBoolean(System.getProperty("sphereon-storage.test.fiddler.enabled", "false"));
     private static final String API_OAUTH2_TOKEN = System.getProperty("sphereon-storage.test.api-token", "0dbd17f1-c108-350e-807e-42d13e543b32");
     private static final String ENDPOINT = System.getProperty("sphereon-storage.test.endpoint", /*"http://localhost:19780"*/ DEFAULT_ENDPOIMT);
 
@@ -183,9 +183,10 @@ public class TestSphereonBlobStore {
         BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder.payload(payload);
         payloadBlobBuilder.contentType(MediaType.PLAIN_TEXT_UTF_8);
         Blob blob = payloadBlobBuilder.build();
-
         String eTag = blobStore.putBlob(container, blob);
         Assert.assertNull(eTag);
+
+
     }
 
     @Test(priority = 5)
@@ -203,6 +204,12 @@ public class TestSphereonBlobStore {
 
         boolean exists = blobStore.blobExists(container, filename2);
         Assert.assertTrue(exists);
+
+        // Try with encoded name
+        String encodedFileName = URLEncoder.encode(filename2, Charsets.US_ASCII.name());
+        exists = blobStore.blobExists(container, encodedFileName);
+        Assert.assertTrue(exists);
+
 
         Blob retrieved = blobStore.getBlob(container, filename2);
 

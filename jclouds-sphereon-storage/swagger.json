@@ -409,6 +409,52 @@
         ],
         "tags": ["Storage"],
         "consumes": ["application/json"]
+      },
+      "put": {
+        "summary": "Update stream within a container",
+        "security": [{"oauth2schema": ["global"]}],
+        "produces": ["application/json"],
+        "description": "Update stream within a container.",
+        "operationId": "updateStreamUsingPath",
+        "responses": {
+          "201": {
+            "schema": {"$ref": "#/definitions/StreamResponse"},
+            "description": "Object update"
+          },
+          "400": {
+            "schema": {"$ref": "#/definitions/ErrorResponse"},
+            "description": "Invalid container or stream request"
+          },
+          "404": {
+            "schema": {"$ref": "#/definitions/ErrorResponse"},
+            "description": "Container was not found"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "containerId",
+            "description": "containerId",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "path",
+            "description": "path",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "formData",
+            "name": "stream",
+            "description": "stream",
+            "type": "file",
+            "required": true
+          }
+        ],
+        "tags": ["Storage"],
+        "consumes": ["multipart/form-data"]
       }
     },
     "/backends": {"post": {
@@ -656,7 +702,7 @@
     },
     "InfoResponse": {
       "type": "object",
-      "properties": {"streamInfo": {
+      "properties": {"streamInfos": {
         "type": "array",
         "items": {"$ref": "#/definitions/StreamInfo"}
       }}

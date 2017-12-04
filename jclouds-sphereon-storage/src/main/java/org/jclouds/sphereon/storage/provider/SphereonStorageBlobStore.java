@@ -16,10 +16,12 @@
 
 package org.jclouds.sphereon.storage.provider;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Supplier;
 import com.sphereon.sdk.storage.model.BackendRequest;
 import com.sphereon.sdk.storage.model.BackendResponse;
 import com.sphereon.sdk.storage.model.ContainerResponse;
+import com.sphereon.sdk.storage.model.InfoResponse;
 import com.sphereon.sdk.storage.model.StreamResponse;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
@@ -55,6 +57,9 @@ import org.jclouds.sphereon.storage.provider.functions.InfoResponseToMetadata;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -181,10 +186,19 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public BlobMetadata blobMetadata(String container, String key) {
-        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(storageApi.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1)));
+        InfoResponse infoResponse = storageApi.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1));
+        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(infoResponse);
         for (MutableBlobMetadata metadata : storageMetadata) {
-            if (metadata.getName().equalsIgnoreCase(key) || metadata.getName().equalsIgnoreCase(key)) {
+            if (metadata.getName().equalsIgnoreCase(key)) {
                 return metadata;
+            }
+            try {
+                // Try URL encoding on both
+                if (URLEncoder.encode(metadata.getName(), Charsets.UTF_8.name()).equalsIgnoreCase(key)) {
+                    return metadata;
+                }
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
             }
         }
         return null;

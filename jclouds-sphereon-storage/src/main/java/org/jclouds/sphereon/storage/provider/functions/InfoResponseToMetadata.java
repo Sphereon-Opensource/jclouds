@@ -16,6 +16,7 @@
 
 package org.jclouds.sphereon.storage.provider.functions;
 
+import com.google.common.base.Charsets;
 import com.sphereon.sdk.storage.model.InfoResponse;
 import com.sphereon.sdk.storage.model.StreamInfo;
 import com.sphereon.sdk.storage.model.StreamLocation;
@@ -26,6 +27,8 @@ import org.jclouds.blobstore.domain.internal.MutableBlobMetadataImpl;
 import org.jclouds.blobstore.domain.internal.PageSetImpl;
 
 import javax.inject.Singleton;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
@@ -41,7 +44,7 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
             return mutableStorageMetadata;
         }
 
-        for (StreamInfo info : from.getStreamInfo()) {
+        for (StreamInfo info : from.getStreamInfos()) {
             MutableBlobMetadata metadata = new MutableBlobMetadataImpl();
 
             metadata.setContainer(info.getStreamLocation().getContainerId());
@@ -70,8 +73,14 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
     }
 
     private String buildName(StreamLocation streamLocation) {
-        String folder = streamLocation.getFolderPath();
-        String filename = streamLocation.getFilename();
+        String folder = null;
+        String filename = null;
+        try {
+            folder = URLDecoder.decode(streamLocation.getFolderPath(), Charsets.UTF_8.name());
+            filename = URLDecoder.decode(streamLocation.getFilename(), Charsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
         if (isEmpty(folder) || folder.endsWith("/")) {
             return String.format("%s%s", folder, filename);
         } else {
@@ -79,7 +88,7 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
         }
     }
 
-    private boolean isEmpty(String str){
+    private boolean isEmpty(String str) {
         return str == null || str.length() == 0;
     }
 }
