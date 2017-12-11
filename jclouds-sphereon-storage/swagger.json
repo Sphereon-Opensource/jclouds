@@ -653,7 +653,7 @@
           "description": "The type of backend that is created. This field allows users to create a local backend or with supported 3rd parties.",
           "type": "string",
           "enum": [
-            "SHARED_STORAGE",
+            "SPHEREON_CLOUD_STORAGE",
             "AMAZON_S3",
             "MS_AZURE_BLOB_STORAGE",
             "GOOGLE_CLOUD_STORAGE",
@@ -714,21 +714,18 @@
           "description": "The credentials class type to be used.",
           "type": "string",
           "enum": [
-            "com.sphereon.libs.storage.client.api.model.credentials.NoCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.OAuthCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.OAuth2Credentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.UsernamePasswordCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.ClaimParameters"
+            "NoCredentials",
+            "OAuthCredentials",
+            "APITokenCredentials",
+            "UsernamePasswordCredentials",
+            "ClaimParameters"
           ]
-        },
-        "oauth2Credentials": {
-          "description": "The oauth2Credentials for this backend.",
-          "$ref": "#/definitions/OAuth2Credentials"
         },
         "oauthCredentials": {
           "description": "The usernamePasswordCredentials for this backend.",
           "$ref": "#/definitions/OAuthCredentials"
         },
+        "apitokenCredentials": {"$ref": "#/definitions/APITokenCredentials"},
         "usernamePasswordCredentials": {
           "description": "The usernamePasswordCredentials for this backend.",
           "$ref": "#/definitions/UsernamePasswordCredentials"
@@ -754,14 +751,21 @@
       "type": "object",
       "properties": {
         "authenticationProvider": {
+          "description": "The provider of the authentication credentials.",
           "type": "string",
           "enum": [
             "API_SUPPLIER",
             "API_IMPLEMENTER"
           ]
         },
-        "secretkey": {"type": "string"},
-        "accesskeyid": {"type": "string"}
+        "secretkey": {
+          "description": "The OAuth secret key.",
+          "type": "string"
+        },
+        "accesskeyid": {
+          "description": "The OAuth access key.",
+          "type": "string"
+        }
       }
     },
     "StreamResponse": {
@@ -825,19 +829,6 @@
         "message": {"type": "string"}
       }
     },
-    "OAuth2Credentials": {
-      "type": "object",
-      "properties": {
-        "authenticationProvider": {
-          "type": "string",
-          "enum": [
-            "API_SUPPLIER",
-            "API_IMPLEMENTER"
-          ]
-        },
-        "token": {"type": "string"}
-      }
-    },
     "StreamLocation": {
       "description": "Location record of data stream",
       "type": "object",
@@ -857,15 +848,25 @@
       "type": "object",
       "properties": {
         "authenticationProvider": {
+          "description": "The provider of the authentication credentials.",
           "type": "string",
           "enum": [
             "API_SUPPLIER",
             "API_IMPLEMENTER"
           ]
         },
-        "password": {"type": "string"},
-        "domain": {"type": "string"},
-        "userName": {"type": "string"}
+        "password": {
+          "description": "The password associated with the username.",
+          "type": "string"
+        },
+        "domain": {
+          "description": "The domain associated with the username.",
+          "type": "string"
+        },
+        "userName": {
+          "description": "The username.",
+          "type": "string"
+        }
       }
     },
     "ErrorResponse": {
@@ -888,7 +889,7 @@
           "readOnly": true,
           "type": "string",
           "enum": [
-            "SHARED_STORAGE",
+            "SPHEREON_CLOUD_STORAGE",
             "AMAZON_S3",
             "MS_AZURE_BLOB_STORAGE",
             "GOOGLE_CLOUD_STORAGE",
@@ -997,6 +998,23 @@
         }
       }
     },
+    "APITokenCredentials": {
+      "type": "object",
+      "properties": {
+        "authenticationProvider": {
+          "description": "The provider of the authentication credentials.",
+          "type": "string",
+          "enum": [
+            "API_SUPPLIER",
+            "API_IMPLEMENTER"
+          ]
+        },
+        "token": {
+          "description": "The API token.",
+          "type": "string"
+        }
+      }
+    },
     "BackendLocation": {
       "type": "object",
       "properties": {
@@ -1058,11 +1076,11 @@
         "credentialType": {
           "type": "string",
           "enum": [
-            "com.sphereon.libs.storage.client.api.model.credentials.NoCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.OAuthCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.OAuth2Credentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.UsernamePasswordCredentials",
-            "com.sphereon.libs.storage.client.api.model.credentials.ClaimParameters"
+            "NoCredentials",
+            "OAuthCredentials",
+            "APITokenCredentials",
+            "UsernamePasswordCredentials",
+            "ClaimParameters"
           ]
         },
         "authenticationProvider": {
