@@ -104,7 +104,7 @@ public class TestSphereonBlobStore {
         if (!exists) {
             BackendRequest backendRequest = new BackendRequest();
             backendRequest.setName(BACKEND_NAME_OR_ID);
-            backendRequest.setBackendType(BackendRequest.BackendTypeEnum.SHARED_STORAGE);
+            backendRequest.setBackendType(BackendRequest.BackendTypeEnum.SPHEREON_CLOUD_STORAGE);
             backendRequest.setDescription("Test backend");
             CredentialsRequest credentialsRequest = new CredentialsRequest();
             credentialsRequest.setCredentialType(CredentialsRequest.CredentialTypeEnum.NOCREDENTIALS);
