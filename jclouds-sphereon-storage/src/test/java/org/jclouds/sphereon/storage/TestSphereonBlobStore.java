@@ -28,10 +28,7 @@ import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
-import org.jclouds.blobstore.domain.Blob;
-import org.jclouds.blobstore.domain.BlobBuilder;
-import org.jclouds.blobstore.domain.PageSet;
-import org.jclouds.blobstore.domain.StorageMetadata;
+import org.jclouds.blobstore.domain.*;
 import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.blobstore.options.PutOptions;
 import org.jclouds.http.HttpResponseException;
@@ -107,7 +104,7 @@ public class TestSphereonBlobStore {
         if (!exists) {
             BackendRequest backendRequest = new BackendRequest();
             backendRequest.setName(BACKEND_NAME_OR_ID);
-            backendRequest.setBackendType(BackendRequest.BackendTypeEnum.SHARED_STORAGE);
+            backendRequest.setBackendType(BackendRequest.BackendTypeEnum.SPHEREON_CLOUD_STORAGE);
             backendRequest.setDescription("Test backend");
             CredentialsRequest credentialsRequest = new CredentialsRequest();
             credentialsRequest.setCredentialType(CredentialsRequest.CredentialTypeEnum.NOCREDENTIALS);
@@ -239,6 +236,18 @@ public class TestSphereonBlobStore {
                 Assert.assertEquals(metadata.getName(), filename2);
             }
         }
+    }
+
+    @Test(priority = 6)
+    public void blobInfo() {
+        BlobMetadata blobMetadata = blobStore.blobMetadata(container, filename2);
+
+        Assert.assertNotNull(blobMetadata);
+        Assert.assertNotNull(blobMetadata.getContentMetadata());
+        Assert.assertEquals(blobMetadata.getName(), filename2);
+        Assert.assertNotNull(blobMetadata.getContainer());
+        Assert.assertNotNull(blobMetadata.getSize());
+        Assert.assertEquals(blobMetadata.getContentMetadata().getContentType(), MediaType.PLAIN_TEXT_UTF_8);
     }
 
     @Test(priority = 7)
