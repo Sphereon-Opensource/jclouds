@@ -36,7 +36,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSource;
-import com.sphereon.sdk.storage.model.OAuth2Credentials;
+import com.sphereon.sdk.storage.model.BearerTokenCredentials;
 import org.jclouds.Constants;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.domain.Blob;
@@ -71,7 +71,7 @@ public class SphereonStorageBlobLiveTest extends BaseBlobLiveTest {
     @Override
     protected Properties setupProperties() {
 
-        OAuth2Credentials accessCredentials = new OAuth2Credentials();
+        BearerTokenCredentials accessCredentials = new BearerTokenCredentials();
         accessCredentials.setToken("b6573248-ee72-304c-9dde-364ef4802530");
 
         Properties properties = super.setupProperties();

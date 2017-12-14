@@ -22,13 +22,17 @@ import com.google.common.net.MediaType;
 import com.google.inject.Module;
 import com.sphereon.sdk.storage.model.BackendRequest;
 import com.sphereon.sdk.storage.model.BackendResponse;
+import com.sphereon.sdk.storage.model.BearerTokenCredentials;
 import com.sphereon.sdk.storage.model.CredentialsRequest;
-import com.sphereon.sdk.storage.model.OAuth2Credentials;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
-import org.jclouds.blobstore.domain.*;
+import org.jclouds.blobstore.domain.Blob;
+import org.jclouds.blobstore.domain.BlobBuilder;
+import org.jclouds.blobstore.domain.BlobMetadata;
+import org.jclouds.blobstore.domain.PageSet;
+import org.jclouds.blobstore.domain.StorageMetadata;
 import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.blobstore.options.PutOptions;
 import org.jclouds.http.HttpResponseException;
@@ -79,7 +83,7 @@ public class TestSphereonBlobStore {
 
     private ContextBuilder createContextBuilder() {
         ContextBuilder contextBuilder = ContextBuilder.newBuilder(SPHEREON_STORAGE);
-        OAuth2Credentials accessCredentials = new OAuth2Credentials();
+        BearerTokenCredentials accessCredentials = new BearerTokenCredentials();
         accessCredentials.setToken(API_OAUTH2_TOKEN);
 
         Properties properties = new Properties();
@@ -247,7 +251,7 @@ public class TestSphereonBlobStore {
         Assert.assertEquals(blobMetadata.getName(), filename2);
         Assert.assertNotNull(blobMetadata.getContainer());
         Assert.assertNotNull(blobMetadata.getSize());
-        Assert.assertEquals(blobMetadata.getContentMetadata().getContentType(), MediaType.PLAIN_TEXT_UTF_8);
+        Assert.assertEquals(blobMetadata.getContentMetadata().getContentType(), MediaType.PLAIN_TEXT_UTF_8.toString());
     }
 
     @Test(priority = 7)
