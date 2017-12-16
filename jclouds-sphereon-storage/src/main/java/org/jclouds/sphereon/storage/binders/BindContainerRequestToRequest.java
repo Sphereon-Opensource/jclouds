@@ -16,7 +16,7 @@
 
 package org.jclouds.sphereon.storage.binders;
 
-import com.sphereon.sdk.model.ContainerRequest;
+import com.sphereon.sdk.storage.model.ContainerRequest;
 import org.jclouds.http.HttpRequest;
 import org.jclouds.json.Json;
 import org.jclouds.rest.Binder;
@@ -50,7 +50,7 @@ public class BindContainerRequestToRequest implements Binder {
         ContainerRequest containerRequest = new ContainerRequest();
         containerRequest.setName(container);
         containerRequest.setBackendId(backendId);
-        containerRequest.setCreationMode(ContainerRequest.CreationModeEnum.ALLOW_EXISTING);
+        containerRequest.setPropagationType(ContainerRequest.PropagationTypeEnum.ALLOW);
 
         String json = jsonBinder.toJson(containerRequest);
         request.setPayload(json);

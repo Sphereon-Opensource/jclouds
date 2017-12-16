@@ -19,7 +19,7 @@ package org.jclouds.sphereon.storage.parsers;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.TypeLiteral;
-import com.sphereon.sdk.model.InfoResponse;
+import com.sphereon.sdk.storage.model.InfoResponse;
 import org.jclouds.http.functions.ParseJson;
 import org.jclouds.json.internal.GsonWrapper;
 import org.jclouds.sphereon.storage.provider.config.OffsetDateTimeTypeAdapter;

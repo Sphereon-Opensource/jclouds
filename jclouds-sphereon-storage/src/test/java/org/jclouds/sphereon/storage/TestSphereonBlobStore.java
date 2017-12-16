@@ -16,64 +16,108 @@
 
 package org.jclouds.sphereon.storage;
 
+import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
-import com.sphereon.sdk.model.OAuth2Credentials;
+import com.google.inject.Module;
+import com.sphereon.sdk.storage.model.BackendRequest;
+import com.sphereon.sdk.storage.model.BackendResponse;
+import com.sphereon.sdk.storage.model.BearerTokenCredentials;
+import com.sphereon.sdk.storage.model.CredentialsRequest;
+import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.domain.BlobBuilder;
+import org.jclouds.blobstore.domain.BlobMetadata;
 import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageMetadata;
 import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.blobstore.options.PutOptions;
 import org.jclouds.http.HttpResponseException;
 import org.jclouds.io.ByteStreams2;
+import org.jclouds.io.Payload;
+import org.jclouds.io.payloads.InputStreamPayload;
+import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.jclouds.sphereon.storage.reference.SphereonStorageConstants;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.file.Files;
 import java.util.Properties;
 
+import static org.jclouds.sphereon.storage.reference.SphereonStorageConstants.DEFAULT_ENDPOIMT;
+import static org.jclouds.sphereon.storage.reference.SphereonStorageConstants.SPHEREON_STORAGE;
+
+@Test(singleThreaded = true)
 public class TestSphereonBlobStore {
 
-    private static final BlobStore blobStore = getBlobStore();
+    // The backend name or ID. Please not that this backend has to exist in Sphereon for the tests to work. Creating backends is out of the scope of jclouds
+    public static final String BACKEND_NAME_OR_ID = "jclouds-test-backend";
     private static final String container = "container-name" + System.currentTimeMillis();
     private static final String filename1 = "file1.txt";
     private static final String filename2 = "folder/file2.txt";
 
-    static {
-        // to support localhost.fiddler
-        System.setProperty("http.proxyHost", "127.0.0.1");
-        System.setProperty("https.proxyHost", "127.0.0.1");
-        System.setProperty("http.proxyPort", "8888");
-        System.setProperty("https.proxyPort", "8888");
+    private static final boolean FIDDLER_ENABLED = Boolean.parseBoolean(System.getProperty("sphereon-storage.test.fiddler.enabled", "false"));
+    private static final String API_OAUTH2_TOKEN = System.getProperty("sphereon-storage.test.api-token", "0dbd17f1-c108-350e-807e-42d13e543b32");
+    private static final String ENDPOINT = System.getProperty("sphereon-storage.test.endpoint", /*"http://localhost:19780"*/ DEFAULT_ENDPOIMT);
+
+    private final BlobStore blobStore;
+    private final SphereonStorageApi storageApi;
+
+    public TestSphereonBlobStore() {
+        ContextBuilder contextBuilder = createContextBuilder();
+        BlobStoreContext blobStoreContext = contextBuilder.modules(ImmutableSet.<Module>of(new SLF4JLoggingModule())).buildView(BlobStoreContext.class);
+
+        this.blobStore = blobStoreContext.getBlobStore();
+        this.storageApi = contextBuilder.buildApi(SphereonStorageApi.class);
     }
 
-    private static BlobStore getBlobStore() {
-        String provider = "sphereon-storage";
-        ContextBuilder contextBuilder = ContextBuilder.newBuilder(provider);
-        contextBuilder = sphereonStorageProviderSettings(contextBuilder);
-
-        BlobStoreContext blobStoreContext = contextBuilder.buildView(BlobStoreContext.class);
-        BlobStore blobStore = blobStoreContext.getBlobStore();
-
-        return blobStore;
-    }
-
-    private static ContextBuilder sphereonStorageProviderSettings(ContextBuilder contextBuilder) {
-        OAuth2Credentials accessCredentials = new OAuth2Credentials();
-        accessCredentials.setToken("b6573248-ee72-304c-9dde-364ef4802530");
+    private ContextBuilder createContextBuilder() {
+        ContextBuilder contextBuilder = ContextBuilder.newBuilder(SPHEREON_STORAGE);
+        BearerTokenCredentials accessCredentials = new BearerTokenCredentials();
+        accessCredentials.setToken(API_OAUTH2_TOKEN);
 
         Properties properties = new Properties();
-        properties.setProperty(SphereonStorageConstants.BACKEND_ID, "backend");
+        properties.setProperty(SphereonStorageConstants.BACKEND_ID, BACKEND_NAME_OR_ID);
         properties.setProperty(SphereonStorageConstants.IDENTITY, SphereonStorageConstants.STORAGE_CLIENT);
         properties.setProperty(SphereonStorageConstants.CREDENTIAL, accessCredentials.getToken());
+        properties.setProperty(Constants.PROPERTY_ENDPOINT, ENDPOINT);
+        if (FIDDLER_ENABLED) {
+            properties.setProperty(Constants.PROPERTY_PROXY_HOST, "localhost");
+            properties.setProperty(Constants.PROPERTY_PROXY_PORT, "8888");
+
+        }
         //properties.setProperty(SphereonStorageConstants.TEMP_DIR, storagePathController.getStorageTemp(accessCredentials).getAbsolutePath());
         //properties.setProperty(SphereonStorageConstants.STORAGE_API_BASE_PATH, storageApiBasePath);
         return contextBuilder.overrides(properties);
     }
+
+
+    @Test(priority = 0)
+    public void assertBackendExists() {
+        boolean exists = storageApi.backendExists(BACKEND_NAME_OR_ID);
+        if (!exists) {
+            BackendRequest backendRequest = new BackendRequest();
+            backendRequest.setName(BACKEND_NAME_OR_ID);
+            backendRequest.setBackendType(BackendRequest.BackendTypeEnum.SPHEREON_CLOUD_STORAGE);
+            backendRequest.setDescription("Test backend");
+            CredentialsRequest credentialsRequest = new CredentialsRequest();
+            credentialsRequest.setCredentialType(CredentialsRequest.CredentialTypeEnum.NOCREDENTIALS);
+            BackendResponse response = storageApi.createBackend(backendRequest);
+            exists = response.getState() == BackendResponse.StateEnum.CREATED;
+        }
+        Assert.assertTrue(exists);
+    }
+
 
     @Test(priority = 1)
     public void assertContainerNotExists() {
@@ -107,21 +151,32 @@ public class TestSphereonBlobStore {
 
     @Test(priority = 4)
     public void putAndGetBlob() throws IOException {
-        byte[] payload = "TEXT".getBytes();
-        BlobBuilder blobBuilder = blobStore.blobBuilder(filename1);
-        BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder.payload(payload);
-        payloadBlobBuilder.contentType(MediaType.PLAIN_TEXT_UTF_8);
-        Blob blob = payloadBlobBuilder.build();
+        File file = loadResource("file1.txt");
+        byte[] bytes = Files.readAllBytes(file.toPath());
 
-        String eTag = blobStore.putBlob(container, blob);
-        Assert.assertNotNull(eTag);
+        try (InputStream inputStream = new FileInputStream(file)) {
+            Payload payload = new InputStreamPayload(inputStream);
 
-        boolean exists = blobStore.blobExists(container, filename1);
-        Assert.assertTrue(exists);
+            BlobBuilder blobBuilder = blobStore.blobBuilder(filename1);
+            BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder.payload(payload);
+            payloadBlobBuilder.contentType(MediaType.PLAIN_TEXT_UTF_8);
+            payloadBlobBuilder.contentLength(file.length());
+            Blob blob = payloadBlobBuilder.build();
 
-        Blob retrieved = blobStore.getBlob(container, filename1);
+            String eTag = blobStore.putBlob(container, blob);
+            Assert.assertNotNull(eTag);
 
-        assertBlobs(blob, retrieved, payload);
+
+            boolean exists = blobStore.blobExists(container, filename1);
+            Assert.assertTrue(exists);
+
+            Blob retrieved = blobStore.getBlob(container, filename1);
+
+            assertBlobs(blob, retrieved, bytes);
+//            Assert.assertEquals(blob.getMetadata().getContentMetadata().getContentType(), "text/plain");
+//            Assert.assertEquals(blob.getMetadata().getType(), StorageType.BLOB);
+
+        }
     }
 
     @Test(priority = 5)
@@ -131,9 +186,10 @@ public class TestSphereonBlobStore {
         BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder.payload(payload);
         payloadBlobBuilder.contentType(MediaType.PLAIN_TEXT_UTF_8);
         Blob blob = payloadBlobBuilder.build();
-
         String eTag = blobStore.putBlob(container, blob);
         Assert.assertNull(eTag);
+
+
     }
 
     @Test(priority = 5)
@@ -151,6 +207,12 @@ public class TestSphereonBlobStore {
 
         boolean exists = blobStore.blobExists(container, filename2);
         Assert.assertTrue(exists);
+
+        // Try with encoded name
+        String encodedFileName = URLEncoder.encode(filename2, Charsets.US_ASCII.name());
+        exists = blobStore.blobExists(container, encodedFileName);
+        Assert.assertTrue(exists);
+
 
         Blob retrieved = blobStore.getBlob(container, filename2);
 
@@ -171,12 +233,25 @@ public class TestSphereonBlobStore {
 
         Assert.assertEquals(list.size(), 2);
         for (StorageMetadata metadata : list) {
+            System.out.println(String.format("%s: %s (%d)", metadata.getType(), metadata.getName(), metadata.getSize()));
             if (filename1.equalsIgnoreCase(metadata.getName())) {
                 Assert.assertEquals(metadata.getName(), filename1);
             } else {
                 Assert.assertEquals(metadata.getName(), filename2);
             }
         }
+    }
+
+    @Test(priority = 6)
+    public void blobInfo() {
+        BlobMetadata blobMetadata = blobStore.blobMetadata(container, filename2);
+
+        Assert.assertNotNull(blobMetadata);
+        Assert.assertNotNull(blobMetadata.getContentMetadata());
+        Assert.assertEquals(blobMetadata.getName(), filename2);
+        Assert.assertNotNull(blobMetadata.getContainer());
+        Assert.assertNotNull(blobMetadata.getSize());
+        Assert.assertEquals(blobMetadata.getContentMetadata().getContentType(), MediaType.PLAIN_TEXT_UTF_8.toString());
     }
 
     @Test(priority = 7)
@@ -205,7 +280,6 @@ public class TestSphereonBlobStore {
 
         blobStore.deleteContainer(container);
 
-
         boolean exists = blobStore.blobExists(container, filename1);
         Assert.assertFalse(exists);
 
@@ -228,5 +302,16 @@ public class TestSphereonBlobStore {
         Assert.assertNotNull(retrieved.getMetadata().getContentMetadata().getContentType());
 
         Assert.assertEquals(ByteStreams2.toByteArrayAndClose(retrieved.getPayload().openStream()), payload);
+    }
+
+    private File loadResource(String filename) {
+        try {
+            URL url = getClass().getClassLoader().getResource(filename);
+            File file = new File(url.toURI());
+            return file;
+        } catch (URISyntaxException e) {
+            Assert.fail(e.getMessage());
+            return null;
+        }
     }
 }

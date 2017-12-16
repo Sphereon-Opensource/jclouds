@@ -36,7 +36,8 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSource;
-import com.sphereon.sdk.model.OAuth2Credentials;
+import com.sphereon.sdk.storage.model.BearerTokenCredentials;
+import org.jclouds.Constants;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.integration.internal.BaseBlobLiveTest;
@@ -60,35 +61,25 @@ import static org.testng.Assert.assertNotNull;
 
 @Test(groups = {"live"})
 public class SphereonStorageBlobLiveTest extends BaseBlobLiveTest {
-    private static final String sphereonEndpoint = System.getProperty("sphereon-storage.endpoint", "https://sandbox.xill.io/v2");
+    private static final String sphereonEndpoint = System.getProperty("sphereon-storage.endpoint", "http://gw.api.cloud.sphereon.com/bucket-storage/0.8/");
     private static final String sysHttpStreamMD5 = System.getProperty("jclouds.blobstore.httpstream.md5");
 
     public SphereonStorageBlobLiveTest() {
         provider = "sphereon-storage";
     }
 
-    static {
-        // to support localhost.fiddler
-        System.setProperty("http.proxyHost", "127.0.0.1");
-        System.setProperty("https.proxyHost", "127.0.0.1");
-        System.setProperty("http.proxyPort", "8888");
-        System.setProperty("https.proxyPort", "8888");
-    }
-
     @Override
     protected Properties setupProperties() {
-        Properties properties = super.setupProperties();
-        properties.setProperty("sphereon-storage.endpoint", sphereonEndpoint);
-        properties.setProperty("sphereon-storage.identity", "sphereon-storage");
-        properties.setProperty("sphereon-storage.credential", "sphereon-storage");
-        properties.setProperty("jclouds.identity", "API User");
 
-        OAuth2Credentials accessCredentials = new OAuth2Credentials();
+        BearerTokenCredentials accessCredentials = new BearerTokenCredentials();
         accessCredentials.setToken("b6573248-ee72-304c-9dde-364ef4802530");
 
+        Properties properties = super.setupProperties();
         properties.setProperty(SphereonStorageConstants.BACKEND_ID, "backend");
+        properties.setProperty(SphereonStorageConstants.IDENTITY, "sphereon-storage");
         properties.setProperty(SphereonStorageConstants.CREDENTIAL, accessCredentials.getToken());
-        properties.setProperty("sphereon-storage.endpoint", "http://localhost.fiddler:19780/");
+        properties.setProperty(Constants.PROPERTY_ENDPOINT, sphereonEndpoint);
+        properties.setProperty("jclouds.identity", "API User");
         return properties;
     }
 

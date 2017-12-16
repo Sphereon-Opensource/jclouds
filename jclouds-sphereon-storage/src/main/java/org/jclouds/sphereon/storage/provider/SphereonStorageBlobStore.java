@@ -16,19 +16,23 @@
 
 package org.jclouds.sphereon.storage.provider;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Supplier;
-import com.sphereon.sdk.model.ContainerResponse;
-import com.sphereon.sdk.model.StreamLocation;
+import com.sphereon.sdk.storage.model.BackendRequest;
+import com.sphereon.sdk.storage.model.BackendResponse;
+import com.sphereon.sdk.storage.model.ContainerResponse;
+import com.sphereon.sdk.storage.model.InfoResponse;
+import com.sphereon.sdk.storage.model.StreamResponse;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
-import org.jclouds.blobstore.domain.BlobAccess;
-import org.jclouds.blobstore.domain.BlobMetadata;
-import org.jclouds.blobstore.domain.ContainerAccess;
-import org.jclouds.blobstore.domain.MultipartPart;
-import org.jclouds.blobstore.domain.MultipartUpload;
-import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageMetadata;
+import org.jclouds.blobstore.domain.BlobAccess;
+import org.jclouds.blobstore.domain.MultipartUpload;
+import org.jclouds.blobstore.domain.ContainerAccess;
+import org.jclouds.blobstore.domain.BlobMetadata;
+import org.jclouds.blobstore.domain.MultipartPart;
+import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.internal.MutableStorageMetadataImpl;
 import org.jclouds.blobstore.domain.internal.PageSetImpl;
 import org.jclouds.blobstore.internal.BaseBlobStore;
@@ -40,7 +44,9 @@ import org.jclouds.blobstore.util.BlobUtils;
 import org.jclouds.collect.Memoized;
 import org.jclouds.domain.Credentials;
 import org.jclouds.domain.Location;
+import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.io.Payload;
+import org.jclouds.io.PayloadEnclosing;
 import org.jclouds.io.PayloadSlicer;
 import org.jclouds.location.Provider;
 import org.jclouds.logging.Logger;
@@ -50,18 +56,23 @@ import org.jclouds.sphereon.storage.provider.functions.InfoResponseToMetadata;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.io.ByteStreams.toByteArray;
 
 @Singleton
 public class SphereonStorageBlobStore extends BaseBlobStore {
 
     private static final Logger logger = new SLF4JLogger.SLF4JLoggerFactory().getLogger(SphereonStorageBlobStore.class.getName());
 
-    private final SphereonStorageApi sync;
+    private final SphereonStorageApi storageApi;
     private final Supplier<Credentials> credentialsSupplier;
     private final InfoResponseToMetadata infoResponseToMetadata;
     private final Blob.Factory blobFactory;
@@ -74,14 +85,24 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
                                        @Provider Supplier<Credentials> credentialsSupplier,
                                        PayloadSlicer slicer,
                                        Blob.Factory blobFactory,
-                                       SphereonStorageApi sync,
+                                       SphereonStorageApi storageApi,
                                        InfoResponseToMetadata infoResponseToMetadata) {
         super(context, blobUtils, defaultLocation, locations, slicer);
         this.credentialsSupplier = credentialsSupplier;
         this.blobFactory = checkNotNull(blobFactory, "blobFactory");
-        this.sync = checkNotNull(sync, "sync");
+        this.storageApi = checkNotNull(storageApi, "storageApi");
         this.infoResponseToMetadata = checkNotNull(infoResponseToMetadata, "infoResponseToMetadata");
     }
+
+    public boolean createBackend(BackendRequest backendRequest) {
+        BackendResponse backendResponse = storageApi.createBackend(backendRequest);
+        return backendResponse != null && backendResponse.getState() == BackendResponse.StateEnum.CREATED;
+    }
+
+    public boolean backendExists(String backend) {
+        return storageApi.backendExists(backend);
+    }
+
 
     @Override
     public boolean createContainerInLocation(Location location, String container) {
@@ -93,19 +114,19 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
         if (options.isPublicRead()) {
             throw new UnsupportedOperationException("unsupported in Sphereon Storage");
         }
-        ContainerResponse containerResponse = sync.createContainer(container);
+        ContainerResponse containerResponse = storageApi.createContainer(container);
         return containerResponse != null && containerResponse.getState() == ContainerResponse.StateEnum.CREATED;
     }
 
     @Override
     public boolean containerExists(String container) {
-        ContainerResponse containerResponse = sync.getContainer(container);
+        ContainerResponse containerResponse = storageApi.getContainer(container);
         return containerResponse != null && containerResponse.getState() != ContainerResponse.StateEnum.DELETED;
     }
 
     @Override
     protected boolean deleteAndVerifyContainerGone(final String container) {
-        ContainerResponse containerResponse = sync.deleteContainer(container);
+        ContainerResponse containerResponse = storageApi.deleteContainer(container);
         return containerResponse != null && containerResponse.getState() == ContainerResponse.StateEnum.DELETED;
     }
 
@@ -116,13 +137,29 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public String putBlob(String container, Blob from, PutOptions putOptions) {
+        MutableContentMetadata contentMetadata = checkNotNull(from.getPayload().getContentMetadata());
+        long length = checkNotNull(contentMetadata.getContentLength());
+
+        if (length != 0 && (putOptions.isMultipart() || !from.getPayload().isRepeatable())) {
+            // JCLOUDS-912 prevents using single-part uploads with InputStream payloads.
+            // Work around this with multi-part upload which buffers parts in-memory.
+            try {
+                byte[] bytes = toByteArray(from.getPayload().openStream());
+                from.setPayload(bytes);
+                from.getPayload().setContentMetadata(contentMetadata);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("failed to read stream", e);
+            }
+        }
+
         if (putOptions.getBlobAccess() != BlobAccess.PRIVATE) {
             throw new UnsupportedOperationException("blob access not supported by Sphereon Storage");
         }
         String path = checkNotNull(from.getMetadata().getName(), "name");
-        StreamLocation streamLocation = sync.createStream(container, path, from);
-        if (streamLocation != null) {
-            String eTag = String.valueOf(streamLocation.hashCode());
+
+        StreamResponse streamResponse = storageApi.createStream(container, path, from);
+        if (streamResponse != null) {
+            String eTag = String.valueOf(streamResponse.getStreamLocation().hashCode());
             return eTag;
         } else {
             return null;
@@ -131,28 +168,37 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public Blob getBlob(String container, String key, GetOptions getOptions) {
-        Payload payload = sync.getStream(container, key, getOptions);
-        if (payload == null) {
+        PayloadEnclosing payloadEnclosing = storageApi.getStream(container, key, getOptions);
+        if (payloadEnclosing == null || payloadEnclosing.getPayload() == null) {
             return null;
         }
 
         BlobMetadata blobMetadata = blobMetadata(container, key);
         Blob blob = blobFactory.create((MutableBlobMetadata) blobMetadata);
-        blob.setPayload(payload);
+        blob.setPayload(payloadEnclosing.getPayload());
         return blob;
     }
 
     @Override
     public void removeBlob(String container, String key) {
-        sync.deleteStream(container, key);
+        storageApi.deleteStream(container, key);
     }
 
     @Override
     public BlobMetadata blobMetadata(String container, String key) {
-        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(sync.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1)));
+        InfoResponse infoResponse = storageApi.listStreams(container, ListContainerOptions.Builder.prefix(key).maxResults(1));
+        PageSet<? extends MutableBlobMetadata> storageMetadata = infoResponseToMetadata.apply(infoResponse);
         for (MutableBlobMetadata metadata : storageMetadata) {
             if (metadata.getName().equalsIgnoreCase(key)) {
                 return metadata;
+            }
+            try {
+                // Try URL encoding on both
+                if (URLEncoder.encode(metadata.getName(), Charsets.UTF_8.name()).equalsIgnoreCase(key)) {
+                    return metadata;
+                }
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
             }
         }
         return null;
@@ -176,7 +222,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
 
     @Override
     public PageSet<? extends StorageMetadata> list(String container, ListContainerOptions listContainerOptions) {
-        return infoResponseToMetadata.apply(sync.listStreams(container, listContainerOptions));
+        return infoResponseToMetadata.apply(storageApi.listStreams(container, listContainerOptions));
     }
 
     @Override
@@ -200,7 +246,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
     }
 
     @Override
-    public MultipartUpload initiateMultipartUpload(String s, BlobMetadata blobMetadata, PutOptions putOptions) {
+    public MultipartUpload initiateMultipartUpload(String container, BlobMetadata blobMetadata, PutOptions putOptions) {
         throw new UnsupportedOperationException("unsupported in Sphereon Storage");
     }
 
@@ -225,7 +271,7 @@ public class SphereonStorageBlobStore extends BaseBlobStore {
     }
 
     @Override
-    public List<MultipartUpload> listMultipartUploads(String s) {
+    public List<MultipartUpload> listMultipartUploads(String container) {
         throw new UnsupportedOperationException("unsupported in Sphereon Storage");
     }
 

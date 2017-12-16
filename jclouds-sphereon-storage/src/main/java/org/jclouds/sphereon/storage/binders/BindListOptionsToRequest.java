@@ -16,7 +16,6 @@
 
 package org.jclouds.sphereon.storage.binders;
 
-import autovalue.shaded.org.apache.commons.lang.StringUtils;
 import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.http.HttpRequest;
 import org.jclouds.rest.Binder;
@@ -38,7 +37,7 @@ public class BindListOptionsToRequest implements Binder {
         String path = "";
         if (options.getDir() != null) {
             path = options.getDir();
-            if (!StringUtils.isEmpty(path) && !path.endsWith("/")) {
+            if (path != null && path.length() > 0 && !path.endsWith("/")) {
                 path = path + "/";
             }
         }

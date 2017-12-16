@@ -28,8 +28,8 @@ public class BlobStoreContextModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(ConsistencyModel.class).toInstance(ConsistencyModel.STRICT);
-        bind(BlobStore.class).to(SphereonStorageBlobStore.class).in(Scopes.SINGLETON);
+        bind(ConsistencyModel.class).toInstance(ConsistencyModel.EVENTUAL);
+        bind(BlobStore.class).to(SphereonStorageBlobStore.class).in(Scopes.NO_SCOPE);
         install(new BlobStoreObjectModule());
     }
 }

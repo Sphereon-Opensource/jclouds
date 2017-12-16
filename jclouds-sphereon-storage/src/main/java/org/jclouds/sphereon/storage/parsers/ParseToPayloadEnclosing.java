@@ -16,18 +16,17 @@
 
 package org.jclouds.sphereon.storage.parsers;
 
-import com.google.inject.TypeLiteral;
-import com.sphereon.sdk.storage.model.ContainerResponse;
-import org.jclouds.http.functions.ParseJson;
-import org.jclouds.json.Json;
+import com.google.common.base.Function;
+import org.jclouds.http.HttpResponse;
+import org.jclouds.http.internal.PayloadEnclosingImpl;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+public class ParseToPayloadEnclosing implements Function<HttpResponse, PayloadEnclosingImpl> {
 
-@Singleton
-public class ParseContainerResponse extends ParseJson<ContainerResponse> {
-    @Inject
-    public ParseContainerResponse(Json json, TypeLiteral<ContainerResponse> type) {
-        super(json, type);
+    @Override
+    public PayloadEnclosingImpl apply(HttpResponse response) {
+        PayloadEnclosingImpl impl = new PayloadEnclosingImpl();
+        impl.setPayload(response.getPayload());
+
+        return impl;
     }
 }

@@ -16,28 +16,18 @@
 
 package org.jclouds.sphereon.storage.parsers;
 
-import com.google.common.base.Function;
-import org.jclouds.blobstore.domain.Blob;
-import org.jclouds.http.HttpResponse;
-import org.jclouds.io.Payload;
+import com.google.inject.TypeLiteral;
+import com.sphereon.sdk.storage.model.BackendResponse;
+import org.jclouds.http.functions.ParseJson;
+import org.jclouds.json.Json;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @Singleton
-public class ParseStreamToBlob implements Function<HttpResponse, Payload> {
-
-    private final Blob.Factory blobFactory;
-
+public class ParseBackendResponse extends ParseJson<BackendResponse> {
     @Inject
-    public ParseStreamToBlob(Blob.Factory blobFactory) {
-        this.blobFactory = checkNotNull(blobFactory, "blobFactory");
-    }
-
-    public Payload apply(HttpResponse from) {
-        checkNotNull(from, "request");
-        return from.getPayload();
+    public ParseBackendResponse(Json json, TypeLiteral<BackendResponse> type) {
+        super(json, type);
     }
 }

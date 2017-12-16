@@ -17,7 +17,7 @@
 package org.jclouds.sphereon.storage.parsers;
 
 import com.google.inject.TypeLiteral;
-import com.sphereon.sdk.model.StreamLocation;
+import com.sphereon.sdk.storage.model.StreamResponse;
 import org.jclouds.http.functions.ParseJson;
 import org.jclouds.json.Json;
 
@@ -25,9 +25,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class ParseStreamLocation extends ParseJson<StreamLocation> {
+public class ParseStreamResponse extends ParseJson<StreamResponse> {
     @Inject
-    public ParseStreamLocation(Json json, TypeLiteral<StreamLocation> type) {
+    public ParseStreamResponse(Json json, TypeLiteral<StreamResponse> type) {
         super(json, type);
     }
 }

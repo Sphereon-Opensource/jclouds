@@ -16,10 +16,10 @@
 
 package org.jclouds.sphereon.storage.provider.functions;
 
-import autovalue.shaded.org.apache.commons.lang.StringUtils;
-import com.sphereon.sdk.model.InfoResponse;
-import com.sphereon.sdk.model.StreamData;
-import com.sphereon.sdk.model.StreamLocation;
+import com.google.common.base.Charsets;
+import com.sphereon.sdk.storage.model.InfoResponse;
+import com.sphereon.sdk.storage.model.StreamInfo;
+import com.sphereon.sdk.storage.model.StreamLocation;
 import org.jclouds.blobstore.domain.MutableBlobMetadata;
 import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageType;
@@ -27,6 +27,8 @@ import org.jclouds.blobstore.domain.internal.MutableBlobMetadataImpl;
 import org.jclouds.blobstore.domain.internal.PageSetImpl;
 
 import javax.inject.Singleton;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
@@ -42,7 +44,7 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
             return mutableStorageMetadata;
         }
 
-        for (StreamData info : from.getStreamData()) {
+        for (StreamInfo info : from.getStreamInfos()) {
             MutableBlobMetadata metadata = new MutableBlobMetadataImpl();
 
             metadata.setContainer(info.getStreamLocation().getContainerId());
@@ -50,7 +52,8 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
             metadata.setName(buildName(info.getStreamLocation()));
             metadata.setLocation(null); // sphereon regions not supported
 
-            metadata.setType(StringUtils.isNotEmpty(info.getStreamLocation().getFileName()) ? StorageType.BLOB : StorageType.FOLDER);
+
+            metadata.setType(!isEmpty(info.getStreamLocation().getFilename()) ? StorageType.BLOB : StorageType.FOLDER);
             metadata.getContentMetadata().setContentType(info.getContentType());
 
             metadata.setETag(info.getEtag());
@@ -70,12 +73,22 @@ public class InfoResponseToMetadata implements Function<InfoResponse, PageSet<Mu
     }
 
     private String buildName(StreamLocation streamLocation) {
-        String folder = streamLocation.getFolderPath();
-        String filename = streamLocation.getFileName();
-        if (StringUtils.isEmpty(folder) || StringUtils.endsWith(folder, "/")) {
+        String folder = null;
+        String filename = null;
+        try {
+            folder = URLDecoder.decode(streamLocation.getFolderPath(), Charsets.UTF_8.name());
+            filename = URLDecoder.decode(streamLocation.getFilename(), Charsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        if (isEmpty(folder) || folder.endsWith("/")) {
             return String.format("%s%s", folder, filename);
         } else {
             return String.format("%s/%s", folder, filename);
         }
+    }
+
+    private boolean isEmpty(String str) {
+        return str == null || str.length() == 0;
     }
 }
