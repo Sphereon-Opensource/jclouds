@@ -2,24 +2,37 @@ Sphereon Storage API jclouds integration
 
 This bundle integrates jclouds blobstore functionality with the Sphereon Storage API. It allows you to create, update and delete objects/files and folders in backends supported by Sphereon.
 
-Domain objects are automaticaly generated using swagger using profile 'generate-models'
+Domain objects are automaticaly generated using swagger using profile 'generate-models'. This profile is enabled by default.
 
 
+### Maven: Build yourself
 ```shell
-mvn -P generate-models clean install
+mvn clean install
 ```
 
-### Maven users (after deployment)
+### Maven: Use provided repository
 
 Add this dependency to your project's POM for the java8 domain classes:
 
 ```xml
+...
+<repositories>
+    <repository>
+        <id>sphereon-public</id>
+        <name>Sphereon Public</name>
+        <url>http://nexus.qa.sphereon.com/repository/sphereon-public/</url>
+    </repository>
+</repositories>
+
+...
+
 <dependency>
     <groupId>org.jclouds</groupId>
     <artifactId>jclouds-sphereon-storage</artifactId>
-    <version>2.0.2</version>
+    <version>2.0.3-SNAPSHOT</version>
     <scope>compile</scope>
 </dependency>
+...
 ```
 
 ## Author
