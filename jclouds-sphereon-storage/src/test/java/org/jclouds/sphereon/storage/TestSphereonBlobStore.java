@@ -110,8 +110,6 @@ public class TestSphereonBlobStore {
             backendRequest.setName(BACKEND_NAME_OR_ID);
             backendRequest.setBackendType(BackendRequest.BackendTypeEnum.SPHEREON_CLOUD_STORAGE);
             backendRequest.setDescription("Test backend");
-            CredentialsRequest credentialsRequest = new CredentialsRequest();
-            credentialsRequest.setCredentialType(CredentialsRequest.CredentialTypeEnum.NOCREDENTIALS);
             BackendResponse response = storageApi.createBackend(backendRequest);
             exists = response.getState() == BackendResponse.StateEnum.CREATED;
         }

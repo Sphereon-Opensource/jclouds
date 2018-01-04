@@ -631,7 +631,16 @@
   "definitions": {
     "BackendRequest": {
       "type": "object",
+      "required": [
+        "backendType",
+        "credentials",
+        "name"
+      ],
       "properties": {
+        "endpoint": {
+          "description": "The endpoint for the backend. Please note that only a Xillio backend needs the endpoint configured for now. Other backends are resolved automatically",
+          "type": "string"
+        },
         "credentials": {
           "description": "The credentials details",
           "$ref": "#/definitions/CredentialsRequest"
@@ -682,7 +691,7 @@
           ]
         },
         "parentId": {
-          "description": "The backend that is used for when properties are not set. This allows usernamePasswordCredentials to be set at one backend and used by multiple backends.",
+          "description": "The backend that is used for when properties are not set. This allows usernamePasswordCredentials to be set at one backend and re-used by multiple backends.",
           "type": "string"
         }
       }
@@ -697,19 +706,17 @@
     "CredentialsRequest": {
       "type": "object",
       "properties": {
-        "credentialType": {
-          "description": "The credentials class type to be used.",
-          "type": "string",
-          "enum": [
-            "NoCredentials",
-            "OAuthCredentials",
-            "BearerTokenCredentials",
-            "UsernamePasswordCredentials",
-            "ClaimParameters"
-          ]
+        "oAuth2ClientCredentials": {
+          "description": "The oAuth2 Client Credentials for this backend.",
+          "$ref": "#/definitions/OAuth2ClientCredentials"
         },
-        "oauthCredentials": {
-          "description": "The usernamePasswordCredentials for this backend.",
+        "individualCredentials": {"$ref": "#/definitions/Credentials"},
+        "credentials": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/Credentials"}
+        },
+        "oAuthCredentials": {
+          "description": "The oAuth Credentials for this backend.",
           "$ref": "#/definitions/OAuthCredentials"
         },
         "usernamePasswordCredentials": {
@@ -860,10 +867,16 @@
     },
     "Backend": {
       "type": "object",
+      "required": ["name"],
       "properties": {
+        "endpoint": {
+          "description": "The endpoint for the backend. Please note that only a Xillio backend needs the endpoint configured for now. Other backends are resolved automatically",
+          "type": "string"
+        },
         "credentials": {
           "description": "The credentials that are used to connect with the backend storage location.",
-          "$ref": "#/definitions/Credentials"
+          "type": "array",
+          "items": {"$ref": "#/definitions/Credentials"}
         },
         "backendType": {
           "description": "The type of backend that is created. This field allows users to create a local backend or with supported 3rd parties.",
@@ -878,6 +891,7 @@
           ]
         },
         "name": {"type": "string"},
+        "description": {"type": "string"},
         "id": {"type": "string"},
         "region": {
           "description": "The storage region where the container and files are stored. This option is available for Google and Amazon Storage. For Azure is only possible to set the region when creating the storage account.",
@@ -912,7 +926,7 @@
           ]
         },
         "parentId": {
-          "description": "The backend that is used for when properties are not set. This allows credentials to be set at one backend and used by multiple backends.",
+          "description": "The backend that is used for when properties are not set. This allows usernamePasswordCredentials to be set at one backend and re-used by multiple backends.",
           "type": "string"
         }
       }
@@ -927,6 +941,19 @@
         },
         "description": {"type": "string"},
         "id": {"type": "string"}
+      }
+    },
+    "OAuth2ClientCredentials": {
+      "type": "object",
+      "properties": {
+        "clientId": {
+          "description": "The clientId",
+          "type": "string"
+        },
+        "clientSecret": {
+          "description": "The clientSecret.",
+          "type": "string"
+        }
       }
     },
     "StreamInfo": {
@@ -1017,7 +1044,7 @@
             "OAuthCredentials",
             "BearerTokenCredentials",
             "UsernamePasswordCredentials",
-            "ClaimParameters"
+            "OAuth2ClientCredentials"
           ]
         },
         "authenticationProvider": {
@@ -1041,8 +1068,8 @@
       "url": "https://sphereon.com",
       "email": "dev@sphereon.com"
     },
-    "description": "Sphereon Storage API provides an abstraction layer for storage of (virtual) folders and streams (files/contents) fully agnostic to supported storage backends. This allows for easy and uniform access to and manipulation of contents regardless of the content backend being used. Currently the following backends are supported: Sphereon cloud storage, Amazon S3, Azure Blob Storage, Google Cloud Storage or one of the Xillio supported content repositories like Documentum, Dropbox etc.",
-    "termsOfService": "https://sphereon.com",
+    "description": "Sphereon Storage API provides an abstraction layer for storage of (virtual) folders and streams (files/contents) fully agnostic with respect to supported storage backends. This allows for easy uniform access to and manipulation of contents regardless of the content backend being used. Currently the following backends are supported: Sphereon Cloud Storage, Amazon S3, Azure Blob Storage, Google Cloud Storage or one of the Xillio supported content repositories like Documentum, Dropbox etc. For more information about this API please visit https://docs.sphereon.com/api/storage/0.8/",
+    "termsOfService": "https://docs.sphereon.com/api/storage/0.8/",
     "title": "Storage",
     "version": "0.8"
   },
