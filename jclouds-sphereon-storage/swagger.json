@@ -176,7 +176,7 @@
       "consumes": ["application/json"]
     }},
     "/info/location": {"post": {
-      "summary": "List streams from location",
+      "summary": "List streams from StreamLocation",
       "security": [{"oauth2schema": ["global"]}],
       "produces": ["application/json"],
       "description": "Returns Stream(s) information from the given Stream Location. When the path points to a file and if the file exists, a StreamInfo record of that single file will be returned. When the path points to a folder, the StreamInfo records of all files in that folder will be returned.",
@@ -207,7 +207,7 @@
     }},
     "/streams/location": {
       "post": {
-        "summary": "Get stream",
+        "summary": "Get stream using StreamLocation",
         "security": [{"oauth2schema": ["global"]}],
         "produces": [
           "application/octet-stream",
@@ -243,7 +243,7 @@
         "consumes": ["application/json;charset=UTF-8"]
       },
       "delete": {
-        "summary": "Delete existing stream",
+        "summary": "Delete stream using StreamLocation",
         "security": [{"oauth2schema": ["global"]}],
         "produces": ["*/*"],
         "description": "Delete an existing stream from a container by stream location. There is no response body for a delete operation.",
@@ -266,13 +266,13 @@
           "description": "streamLocation",
           "required": true
         }],
-        "tags": ["Storage"],
+        "tags": ["Streams"],
         "consumes": ["application/json;charset=UTF-8"]
       }
     },
     "/streams/path/{containerId}/{path}": {
       "post": {
-        "summary": "Create a new stream",
+        "summary": "Create a new stream using Path",
         "security": [{"oauth2schema": ["global"]}],
         "produces": ["application/json"],
         "description": "Create a new stream within a container. Query parameter creationMode accepts values NEW_ONLY to create a new stream, REQUIRE_EXISTING to update an stream and ALLOW_EXISTING to create a new stream or overwrite an existing stream.",
@@ -330,7 +330,7 @@
         "consumes": ["multipart/form-data"]
       },
       "get": {
-        "summary": "Get stream",
+        "summary": "Get stream using Path",
         "security": [{"oauth2schema": ["global"]}],
         "produces": [
           "application/octet-stream",
@@ -375,7 +375,7 @@
         "consumes": ["application/json"]
       },
       "delete": {
-        "summary": "Delete existing stream",
+        "summary": "Delete stream using Path",
         "security": [{"oauth2schema": ["global"]}],
         "produces": ["*/*"],
         "description": "Delete stream from a container. There is no request nor response body for a delete operation.",
@@ -411,7 +411,7 @@
         "consumes": ["application/json"]
       },
       "put": {
-        "summary": "Update existing stream",
+        "summary": "Update existing stream using Path",
         "security": [{"oauth2schema": ["global"]}],
         "produces": ["application/json"],
         "description": "Update stream within a container",
@@ -709,11 +709,6 @@
         "oAuth2ClientCredentials": {
           "description": "The oAuth2 Client Credentials for this backend.",
           "$ref": "#/definitions/OAuth2ClientCredentials"
-        },
-        "individualCredentials": {"$ref": "#/definitions/Credentials"},
-        "credentials": {
-          "type": "array",
-          "items": {"$ref": "#/definitions/Credentials"}
         },
         "oAuthCredentials": {
           "description": "The oAuth Credentials for this backend.",
