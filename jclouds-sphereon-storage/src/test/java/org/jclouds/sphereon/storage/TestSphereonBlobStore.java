@@ -67,7 +67,7 @@ public class TestSphereonBlobStore {
     private static final String filename2 = "folder/file2.txt";
 
     private static final boolean FIDDLER_ENABLED = Boolean.parseBoolean(System.getProperty("sphereon-storage.test.fiddler.enabled", "false"));
-    private static final String API_OAUTH2_TOKEN = System.getProperty("sphereon-storage.test.api-token", "0dbd17f1-c108-350e-807e-42d13e543b32");
+    private static final String API_OAUTH2_TOKEN = System.getProperty("sphereon-storage.test.api-token", "07358f0a-3242-3083-97fe-fa544b09b21f");
     private static final String ENDPOINT = System.getProperty("sphereon-storage.test.endpoint", /*"http://localhost:19780"*/ DEFAULT_ENDPOIMT);
 
     private final BlobStore blobStore;
@@ -96,8 +96,6 @@ public class TestSphereonBlobStore {
             properties.setProperty(Constants.PROPERTY_PROXY_PORT, "8888");
 
         }
-        //properties.setProperty(SphereonStorageConstants.TEMP_DIR, storagePathController.getStorageTemp(accessCredentials).getAbsolutePath());
-        //properties.setProperty(SphereonStorageConstants.STORAGE_API_BASE_PATH, storageApiBasePath);
         return contextBuilder.overrides(properties);
     }
 
@@ -111,7 +109,7 @@ public class TestSphereonBlobStore {
             backendRequest.setBackendType(BackendRequest.BackendTypeEnum.SPHEREON_CLOUD_STORAGE);
             backendRequest.setDescription("Test backend");
             CredentialsRequest credentialsRequest = new CredentialsRequest();
-            credentialsRequest.setCredentialType(CredentialsRequest.CredentialTypeEnum.NOCREDENTIALS);
+            backendRequest.setCredentials(credentialsRequest);
             BackendResponse response = storageApi.createBackend(backendRequest);
             exists = response.getState() == BackendResponse.StateEnum.CREATED;
         }
