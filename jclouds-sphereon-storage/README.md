@@ -29,14 +29,14 @@ Add this dependency to your project's POM for the java8 domain classes:
 <dependency>
     <groupId>org.jclouds</groupId>
     <artifactId>jclouds-sphereon-storage</artifactId>
-    <version>2.0.3-SNAPSHOT</version>
+    <version>2.1.3</version>
     <scope>compile</scope>
 </dependency>
 ...
 ```
 
 ## Author
-Copyright 2017, Sphereon B.V. <https://sphereon.com>
+Copyright 2020, Sphereon B.V. <https://sphereon.com>
 
 License
 -------
